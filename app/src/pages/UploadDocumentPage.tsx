@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import {
     AlertCircle,
@@ -12,7 +11,6 @@ import {
     CheckCircle,
     FileText,
     Upload,
-    Camera,
     X,
     Image as ImageIcon,
     Save
@@ -120,7 +118,7 @@ export default function UploadDocumentPage() {
         reader.readAsDataURL(file);
     };
 
-    const handleRemoveFile = (setter: (val: string | null) => void, inputRef: React.RefObject<HTMLInputElement>) => {
+    const handleRemoveFile = (setter: (val: string | null) => void, inputRef: React.RefObject<HTMLInputElement | null>) => {
         setter(null);
         if (inputRef.current) {
             inputRef.current.value = '';

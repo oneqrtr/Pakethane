@@ -67,8 +67,8 @@ export default function SignDocumentPage() {
 
       const existingSignature = data.signatures[docCode];
       if (existingSignature) {
-        setConsentChecked(existingSignature.consentChecked);
-        setSignatureData(existingSignature.signaturePng);
+        setConsentChecked(existingSignature.consentChecked ?? false);
+        setSignatureData(existingSignature.signaturePng ?? null);
         if (existingSignature.formData) {
           setAdSoyad(existingSignature.formData.adSoyad || '');
           setTcKimlik(existingSignature.formData.tcKimlik || '');
