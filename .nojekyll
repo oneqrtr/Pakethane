@@ -1,0 +1,2 @@
+This file tells GitHub Pages explicitly not to run Jekyll processing.
+This is necessary because Jekyll will fail on node_modules and other hidden files.
