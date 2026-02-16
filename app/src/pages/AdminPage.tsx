@@ -125,7 +125,7 @@ export default function AdminPage() {
       // Debug: Verify it was saved
       debugStorage();
 
-      const link = window.location.origin + getUserPanelUrl(request.token);
+      const link = window.location.origin + window.location.pathname + '#' + getUserPanelUrl(request.token);
       console.log('Generated link:', link);
 
       setGeneratedLink(link);
@@ -703,6 +703,7 @@ export default function AdminPage() {
                     readOnly
                     value={
                       window.location.origin +
+                      window.location.pathname + '#' +
                       getUserPanelUrl(viewRequest.token)
                     }
                   />
@@ -712,6 +713,7 @@ export default function AdminPage() {
                     onClick={() =>
                       navigator.clipboard.writeText(
                         window.location.origin +
+                        window.location.pathname + '#' +
                         getUserPanelUrl(viewRequest.token)
                       )
                     }
