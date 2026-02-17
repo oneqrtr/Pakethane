@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -11,14 +13,14 @@ import {
   FileText,
   AlertCircle,
   ChevronRight,
-  User,
-  Mail,
   RefreshCw,
+  Save,
 } from 'lucide-react';
 import { mockStore, STORAGE_KEY, debugStorage } from '@/lib/store/mockStore';
 import { getDocumentsByCodes } from '@/config/documentPack';
 import type { SigningRequest } from '@/types';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, getClientIp } from '@/lib/utils';
+import { SignatureCanvas } from '@/components/signature/SignatureCanvas';
 
 export default function UserPanelPage() {
   const [searchParams] = useSearchParams();
@@ -28,6 +30,13 @@ export default function UserPanelPage() {
   const [request, setRequest] = useState<SigningRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [adSoyad, setAdSoyad] = useState('');
+  const [email, setEmail] = useState('');
+  const [cepNumarasi, setCepNumarasi] = useState('');
+  const [tcKimlik, setTcKimlik] = useState('');
+  const [userSignature, setUserSignature] = useState<string | null>(null);
+  const [isSavingUserInfo, setIsSavingUserInfo] = useState(false);
 
   useEffect(() => {
     console.log('=== USER PANEL MOUNTED ===');
@@ -83,6 +92,11 @@ export default function UserPanelPage() {
         );
       } else {
         setRequest(data);
+        setAdSoyad(data.adSoyad || '');
+        setEmail(data.email || '');
+        setCepNumarasi(data.cepNumarasi || '');
+        setTcKimlik(data.tcKimlik || '');
+        setUserSignature(data.userSignaturePng || null);
       }
     } catch (err) {
       console.error('Error loading request:', err);
@@ -96,6 +110,27 @@ export default function UserPanelPage() {
     console.log('Manual refresh triggered');
     debugStorage();
     loadRequest();
+  };
+
+  const handleSaveUserInfo = async () => {
+    if (!token) return;
+    setIsSavingUserInfo(true);
+    try {
+      const ip = await getClientIp();
+      const savedAt = new Date().toISOString();
+      const updated = await mockStore.updateRequestUserInfo(token, {
+        adSoyad: adSoyad || undefined,
+        email: email || undefined,
+        cepNumarasi: cepNumarasi || undefined,
+        tcKimlik: tcKimlik || undefined,
+        userSignaturePng: userSignature || undefined,
+        savedAt,
+        ipAddress: ip ?? undefined,
+      });
+      if (updated) setRequest(updated);
+    } finally {
+      setIsSavingUserInfo(false);
+    }
   };
 
   const getProgress = (): number => {
@@ -186,11 +221,12 @@ export default function UserPanelPage() {
   const isAllSigned = signedCount === totalCount;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Logo" className="h-24 sm:h-28 w-auto mx-auto mb-4 object-contain" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             İmza Süreci
           </h1>
           <p className="text-gray-600">
@@ -198,26 +234,74 @@ export default function UserPanelPage() {
           </p>
         </div>
 
-        {/* User Info Card */}
+        {/* User Info Form - İmza süreci başında, ilerleme üstünde */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <CardHeader>
+            <CardTitle>Bilgileriniz</CardTitle>
+            <CardDescription>
+              İmza sürecine başlamadan önce aşağıdaki bilgileri doldurun ve kaydedin.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                {request.adSoyad && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <User className="h-4 w-4" />
-                    <span className="font-medium">{request.adSoyad}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Mail className="h-4 w-4" />
-                  <span>{request.email}</span>
-                </div>
+                <Label htmlFor="adSoyad">Ad Soyad</Label>
+                <Input
+                  id="adSoyad"
+                  placeholder="Ahmet Yılmaz"
+                  value={adSoyad}
+                  onChange={(e) => setAdSoyad(e.target.value)}
+                />
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">İstek Tarihi</p>
-                <p className="font-medium">{formatDate(request.createdAt)}</p>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-posta</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="cepNumarasi">Cep Numarası</Label>
+                <Input
+                  id="cepNumarasi"
+                  type="tel"
+                  placeholder="05XX XXX XX XX"
+                  value={cepNumarasi}
+                  onChange={(e) => setCepNumarasi(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tcKimlik">TC Kimlik No</Label>
+                <Input
+                  id="tcKimlik"
+                  placeholder="12345678901"
+                  value={tcKimlik}
+                  onChange={(e) => setTcKimlik(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Dijital İmza</Label>
+              <SignatureCanvas
+                onChange={setUserSignature}
+                className="w-full"
+              />
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-gray-500">
+                İstek Tarihi: {formatDate(request.createdAt)}
+              </p>
+              <Button
+                onClick={handleSaveUserInfo}
+                disabled={isSavingUserInfo}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {isSavingUserInfo ? 'Kaydediliyor...' : 'Kaydet'}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -284,7 +368,7 @@ export default function UserPanelPage() {
                 return (
                   <div key={doc.code}>
                     {index > 0 && <Separator className="my-3" />}
-                    <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                       <div
                         className={cn(
                           'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium',
@@ -300,8 +384,8 @@ export default function UserPanelPage() {
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0 w-full">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <div>
                             <h4 className="font-medium text-gray-900">
                               {doc.title}

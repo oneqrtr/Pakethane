@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from 'lucide-react';
 import type { DocumentDefinition } from '@/types';
@@ -22,6 +22,23 @@ export function PDFViewer({
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(100);
   const [totalPages, setTotalPages] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [iframeSize, setIframeSize] = useState({ width: 800, height: 1100 });
+
+  useEffect(() => {
+    const updateSize = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const w = Math.min(800, Math.max(280, rect.width - 32));
+      const h = Math.floor(w * (1100 / 800));
+      setIframeSize({ width: w, height: h });
+    };
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     if (document) {
@@ -81,9 +98,9 @@ export function PDFViewer({
     : totalPages;
 
   return (
-    <div className={`flex flex-col bg-gray-100 rounded-lg overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`flex flex-col bg-gray-100 rounded-lg overflow-hidden ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-white border-b">
         <div className="flex items-center gap-2">
           {showNavigation && (
             <>
@@ -149,7 +166,7 @@ export function PDFViewer({
       </div>
 
       {/* PDF Content */}
-      <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center min-h-[500px]">
+      <div className="flex-1 overflow-auto p-2 sm:p-4 bg-gray-100 flex items-center justify-center min-h-[250px] sm:min-h-[400px]">
         <div
           className="bg-white shadow-lg transition-transform duration-200"
           style={{
@@ -159,10 +176,10 @@ export function PDFViewer({
         >
           <iframe
             src={`${SOURCE_PDF_PATH}#page=${currentPage}`}
-            className="border-0"
+            className="border-0 max-w-full"
             style={{
-              width: '800px',
-              height: '1100px',
+              width: `${iframeSize.width}px`,
+              height: `${iframeSize.height}px`,
             }}
             title={document?.title || 'PDF Viewer'}
           />

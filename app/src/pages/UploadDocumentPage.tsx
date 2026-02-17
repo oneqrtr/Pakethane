@@ -181,20 +181,20 @@ export default function UploadDocumentPage() {
     return (
         <div className="min-h-screen bg-gray-50 pb-10">
             {/* Header */}
-            <header className="bg-white shadow-sm sticky top-0 z-10">
-                <div className="max-w-3xl mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => navigate(`/panel?token=${token}`)}>
+            <header className="bg-white shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+                <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4">
+                    <div className="flex items-start sm:items-center justify-between gap-2">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/panel?token=${token}`)} className="flex-shrink-0">
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-900">{document.title}</h1>
-                                <p className="text-sm text-gray-500">{document.description}</p>
+                            <div className="min-w-0">
+                                <h1 className="text-base sm:text-xl font-bold text-gray-900 line-clamp-1">{document.title}</h1>
+                                <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">{document.description}</p>
                             </div>
                         </div>
                         {isAlreadySigned && (
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <Badge className="bg-green-100 text-green-800 border-green-200 flex-shrink-0 text-xs">
                                 <CheckCircle className="h-3 w-3 mr-1" />
                                 Yüklendi
                             </Badge>
@@ -203,7 +203,7 @@ export default function UploadDocumentPage() {
                 </div>
             </header>
 
-            <main className="max-w-3xl mx-auto px-4 py-8">
+            <main className="max-w-3xl mx-auto px-4 py-6 sm:py-8">
                 <Card>
                     <CardHeader>
                         <CardTitle>Belge Yükleme</CardTitle>
@@ -216,7 +216,7 @@ export default function UploadDocumentPage() {
                     <CardContent className="space-y-8">
 
                         {isIdentity && (
-                            <div className="grid md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Front Side */}
                                 <div className="space-y-3">
                                     <Label>Ön Yüz</Label>

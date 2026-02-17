@@ -35,7 +35,6 @@ export default function SignDocumentPage() {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [adSoyad, setAdSoyad] = useState('');
   const [tcKimlik, setTcKimlik] = useState('');
-  const [adres, setAdres] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -66,14 +65,17 @@ export default function SignDocumentPage() {
       setRequest(data);
 
       const existingSignature = data.signatures[docCode];
+      setAdSoyad(
+        existingSignature?.formData?.adSoyad ?? data.adSoyad ?? ''
+      );
+      setTcKimlik(
+        existingSignature?.formData?.tcKimlik ?? data.tcKimlik ?? ''
+      );
+      setSignatureData(
+        existingSignature?.signaturePng ?? data.userSignaturePng ?? null
+      );
       if (existingSignature) {
         setConsentChecked(existingSignature.consentChecked ?? false);
-        setSignatureData(existingSignature.signaturePng ?? null);
-        if (existingSignature.formData) {
-          setAdSoyad(existingSignature.formData.adSoyad || '');
-          setTcKimlik(existingSignature.formData.tcKimlik || '');
-          setAdres(existingSignature.formData.adres || '');
-        }
       }
     }
 
@@ -108,7 +110,6 @@ export default function SignDocumentPage() {
         formData: {
           adSoyad: adSoyad || undefined,
           tcKimlik: tcKimlik || undefined,
-          adres: adres || undefined,
         },
       });
 
@@ -191,26 +192,27 @@ export default function SignDocumentPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <header className="bg-white shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
+          <div className="flex items-start sm:items-center justify-between gap-2">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate(`/panel?token=${token}`)}
+                className="flex-shrink-0 mt-0.5"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 line-clamp-1">
                   {document.title}
                 </h1>
-                <p className="text-sm text-gray-500">{document.description}</p>
+                <p className="text-xs sm:text-sm text-gray-500 line-clamp-2">{document.description}</p>
               </div>
             </div>
             {isAlreadySigned && (
-              <Badge className="bg-green-100 text-green-800 border-green-200">
+              <Badge className="bg-green-100 text-green-800 border-green-200 flex-shrink-0 text-xs">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Önceden İmzalandı
               </Badge>
@@ -220,13 +222,13 @@ export default function SignDocumentPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-2 gap-6">
+      <main className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Left: PDF Viewer */}
-          <div>
+          <div className="order-1">
             <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
+              <CardHeader className="py-4 sm:py-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <FileText className="h-5 w-5" />
                   Belge Önizleme
                 </CardTitle>
@@ -234,14 +236,14 @@ export default function SignDocumentPage() {
               <CardContent>
                 <PDFViewer
                   document={document}
-                  className="h-[600px]"
+                  className="h-[350px] sm:h-[450px] lg:h-[600px]"
                 />
               </CardContent>
             </Card>
           </div>
 
           {/* Right: Signing Form */}
-          <div>
+          <div className="order-2">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">İmza Bilgileri</CardTitle>
@@ -266,42 +268,31 @@ export default function SignDocumentPage() {
 
                 <Separator />
 
-                {/* Optional Form Fields */}
+                {/* Optional Form Fields - Ad Soyad ve TC (panelden gelebilir, burada opsiyonel düzenleme) */}
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium text-gray-700">
                     Ek Bilgiler (Opsiyonel)
                   </h4>
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="adSoyad">Ad Soyad</Label>
-                    <Input
-                      id="adSoyad"
-                      placeholder="Ahmet Yılmaz"
-                      value={adSoyad}
-                      onChange={(e) => setAdSoyad(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="tcKimlik">TCKN / VKN</Label>
-                    <Input
-                      id="tcKimlik"
-                      placeholder="12345678901"
-                      value={tcKimlik}
-                      onChange={(e) => setTcKimlik(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="adres">Adres</Label>
-                    <textarea
-                      id="adres"
-                      rows={3}
-                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Adres bilgisi..."
-                      value={adres}
-                      onChange={(e) => setAdres(e.target.value)}
-                    />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="adSoyad">Ad Soyad</Label>
+                      <Input
+                        id="adSoyad"
+                        placeholder="Ahmet Yılmaz"
+                        value={adSoyad}
+                        onChange={(e) => setAdSoyad(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="tcKimlik">TCKN / VKN</Label>
+                      <Input
+                        id="tcKimlik"
+                        placeholder="12345678901"
+                        value={tcKimlik}
+                        onChange={(e) => setTcKimlik(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -314,8 +305,7 @@ export default function SignDocumentPage() {
                   </Label>
                   <SignatureCanvas
                     onChange={handleSignatureChange}
-                    width={400}
-                    height={150}
+                    className="w-full"
                   />
                 </div>
 

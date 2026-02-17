@@ -1,4 +1,4 @@
-// Types for the E-Imza Prototype
+// Types for the E-İmza Yönetim Sistemi
 
 export type DocumentType = 'contract' | 'identity_card' | 'driver_license' | 'tax_plate';
 
@@ -23,7 +23,6 @@ export interface DocumentSignature {
   formData?: {
     adSoyad?: string;
     tcKimlik?: string;
-    adres?: string;
   };
 }
 
@@ -31,11 +30,18 @@ export interface SigningRequest {
   token: string;
   email: string;
   adSoyad?: string;
+  cepNumarasi?: string;
+  tcKimlik?: string;
+  userSignaturePng?: string;
   selectedDocs: string[];
   signatures: Record<string, DocumentSignature>;
   status: 'pending' | 'partial' | 'completed';
   createdAt: string;
   updatedAt: string;
+  /** Kaydet tıklandığında: kullanıcı bilgileri ilk kaydedildiğinde */
+  savedAt?: string;
+  /** Kaydet tıklandığında: kullanıcının cihaz IP adresi */
+  ipAddress?: string;
 }
 
 export interface CreateRequestInput {
@@ -55,6 +61,5 @@ export interface SignDocumentInput {
   formData?: {
     adSoyad?: string;
     tcKimlik?: string;
-    adres?: string;
   };
 }

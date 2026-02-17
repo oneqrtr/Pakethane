@@ -165,6 +165,29 @@ class LocalStorageRepository {
     return requests;
   }
 
+  // Update user info (adSoyad, email, cepNumarasi, tcKimlik, userSignaturePng, savedAt, ipAddress)
+  async updateRequestUserInfo(
+    token: string,
+    info: Partial<Pick<SigningRequest, 'adSoyad' | 'email' | 'cepNumarasi' | 'tcKimlik' | 'userSignaturePng' | 'savedAt' | 'ipAddress'>>
+  ): Promise<SigningRequest | null> {
+    const storage = this.getAll();
+    const request = storage[token];
+    if (!request) return null;
+
+    if (info.adSoyad !== undefined) request.adSoyad = info.adSoyad;
+    if (info.email !== undefined) request.email = info.email;
+    if (info.cepNumarasi !== undefined) request.cepNumarasi = info.cepNumarasi;
+    if (info.tcKimlik !== undefined) request.tcKimlik = info.tcKimlik;
+    if (info.userSignaturePng !== undefined) request.userSignaturePng = info.userSignaturePng;
+    if (info.savedAt !== undefined) request.savedAt = info.savedAt;
+    if (info.ipAddress !== undefined) request.ipAddress = info.ipAddress;
+    request.updatedAt = getTimestamp();
+
+    storage[token] = request;
+    this.saveAll(storage);
+    return request;
+  }
+
   // Delete request
   async deleteRequest(token: string): Promise<boolean> {
     debugLog('Deleting request', token);

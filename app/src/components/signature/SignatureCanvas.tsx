@@ -11,13 +11,34 @@ interface SignatureCanvasProps {
 
 export function SignatureCanvas({
   onChange,
-  width = 400,
-  height = 200,
+  width: propWidth,
+  height: propHeight,
   className = '',
 }: SignatureCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: propWidth ?? 400, height: propHeight ?? 150 });
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+
+  useEffect(() => {
+    if (propWidth && propHeight) {
+      setDimensions({ width: propWidth, height: propHeight });
+      return;
+    }
+    const updateDimensions = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const w = Math.floor(rect.width) || 400;
+      const h = Math.floor(w * 0.375) || 150;
+      setDimensions({ width: w, height: h });
+    };
+    updateDimensions();
+    const ro = new ResizeObserver(updateDimensions);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [propWidth, propHeight]);
 
   const getCanvasContext = useCallback(() => {
     const canvas = canvasRef.current;
@@ -116,12 +137,12 @@ export function SignatureCanvas({
   }, [getCanvasContext]);
 
   return (
-    <div className={`flex flex-col gap-3 ${className}`}>
-      <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white">
+    <div ref={containerRef} className={`flex flex-col gap-3 w-full ${className}`}>
+      <div className="relative border-2 border-dashed border-gray-300 rounded-lg overflow-hidden bg-white w-full">
         <canvas
           ref={canvasRef}
-          width={width}
-          height={height}
+          width={dimensions.width}
+          height={dimensions.height}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}

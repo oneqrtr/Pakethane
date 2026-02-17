@@ -38,3 +38,25 @@ export function isValidEmail(email: string): boolean {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
+
+/** jsPDF/pdf-lib Türkçe desteklemez; ASCII karşılıklarına çevirir */
+export function toAsciiSafe(str: string): string {
+  const map: Record<string, string> = {
+    İ: 'I', ı: 'i', ş: 's', Ş: 'S', ğ: 'g', Ğ: 'G',
+    ü: 'u', Ü: 'U', ö: 'o', Ö: 'O', ç: 'c', Ç: 'C',
+    â: 'a', î: 'i', û: 'u',
+  };
+  return str.replace(/[İışŞğĞüÜöÖçÇâîû]/g, (c) => map[c] ?? c);
+}
+
+/** Kullanıcının cihaz IP adresini döndürür (api.ipify.org). Hata durumunda null. */
+export async function getClientIp(): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data.ip === 'string' ? data.ip : null;
+  } catch {
+    return null;
+  }
+}
