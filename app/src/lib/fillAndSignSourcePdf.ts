@@ -59,7 +59,7 @@ export async function fillAndSignSourcePdf(
   if (pages.length > 0) {
     try {
       const firstPage = pages[0];
-      const { width, height } = firstPage.getSize();
+      const { height } = firstPage.getSize();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const fontSize = 8;
       const lineHeight = 10;
@@ -89,7 +89,6 @@ export async function fillAndSignSourcePdf(
     if (lastPageIndex < 0 || lastPageIndex >= pages.length) continue;
 
     const page = pages[lastPageIndex];
-    const { height } = page.getSize();
 
     try {
       const base64 = sig.signaturePng.replace(/^data:image\/\w+;base64,/, '');
