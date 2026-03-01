@@ -49,8 +49,6 @@ export function getFilledSignedHtml(
   return injectSignatureIntoHtml(html, signaturePng);
 }
 
-const PDF_API_BASE = (typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: { VITE_PDF_API_URL?: string } }).env?.VITE_PDF_API_URL) || 'http://localhost:3000';
-
 const PDF_PAGE_W_MM = 210;
 const PDF_PAGE_H_MM = 297;
 const HTML_RENDER_WIDTH_PX = 794;
