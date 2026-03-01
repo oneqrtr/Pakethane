@@ -103,12 +103,24 @@ export interface SigningRequest {
   savedAt?: string;
   /** Kaydet tıklandığında: kullanıcının cihaz IP adresi */
   ipAddress?: string;
+  /** EK-1 B Tipi Ödeme Detayları: admin tarafından gönderim öncesi doldurulabilir */
+  ek1Plaka?: string;
+  ek1MarkaModel?: string;
+  ek1ModelYili?: string;
+  ek1SasiNo?: string;
+  ek1MotorNo?: string;
 }
 
 export interface CreateRequestInput {
   email: string;
   adSoyad?: string;
   selectedDocs: string[];
+  /** EK-1 B Tipi Ödeme Detayları: admin doldurursa istek ile kaydedilir */
+  ek1Plaka?: string;
+  ek1MarkaModel?: string;
+  ek1ModelYili?: string;
+  ek1SasiNo?: string;
+  ek1MotorNo?: string;
 }
 
 export interface SignDocumentInput {

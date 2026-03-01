@@ -77,6 +77,11 @@ class LocalStorageRepository {
       createdAt: now,
       updatedAt: now,
     };
+    if (input.ek1Plaka !== undefined) request.ek1Plaka = input.ek1Plaka;
+    if (input.ek1MarkaModel !== undefined) request.ek1MarkaModel = input.ek1MarkaModel;
+    if (input.ek1ModelYili !== undefined) request.ek1ModelYili = input.ek1ModelYili;
+    if (input.ek1SasiNo !== undefined) request.ek1SasiNo = input.ek1SasiNo;
+    if (input.ek1MotorNo !== undefined) request.ek1MotorNo = input.ek1MotorNo;
 
     debugLog('Generated token', token);
     debugLog('New request object', request);

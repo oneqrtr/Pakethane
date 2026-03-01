@@ -43,7 +43,7 @@ import {
   Pencil,
   BookOpen,
 } from 'lucide-react';
-import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH, KKD_TESLIM_TUTANAGI_CODE } from '@/config/documentPack';
+import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH, KKD_TESLIM_TUTANAGI_CODE, FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE } from '@/config/documentPack';
 import {
   mockStore,
   getUserPanelUrl,
@@ -61,6 +61,8 @@ import { isValidEmail, formatDate, cn } from '@/lib/utils';
 import { generateFinalPdf } from '@/lib/generateFinalPdf';
 import { inspectPdfFormFields } from '@/lib/inspectPdfFormFields';
 import { downloadSignedHtmlDocsAsPdf, hasSignedHtmlDocs } from '@/lib/htmlContractPdf';
+import { injectVariablesIntoHtml } from '@/lib/htmlContractVariables';
+import type { HtmlContractVariables } from '@/lib/htmlContractVariables';
 
 const ADMIN_PASSWORD = 'Phane!';
 const ADMIN_AUTH_KEY = 'admin_authenticated';
@@ -78,10 +80,16 @@ export default function AdminPage() {
   const [selectAll, setSelectAll] = useState(false);
   const [email, setEmail] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
+  const [ek1Plaka, setEk1Plaka] = useState('');
+  const [ek1MarkaModel, setEk1MarkaModel] = useState('');
+  const [ek1ModelYili, setEk1ModelYili] = useState('');
+  const [ek1SasiNo, setEk1SasiNo] = useState('');
+  const [ek1MotorNo, setEk1MotorNo] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [previewDoc, setPreviewDoc] = useState<DocumentDefinition | null>(null);
+  const [previewVariables, setPreviewVariables] = useState<HtmlContractVariables | null>(null);
   const [viewRequest, setViewRequest] = useState<SigningRequest | null>(null);
   const [requests, setRequests] = useState<SigningRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
@@ -104,6 +112,11 @@ export default function AdminPage() {
   const [referencesList, setReferencesList] = useState<Reference[]>([]);
   const [kuryeOlFilter, setKuryeOlFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [sendLinkApp, setSendLinkApp] = useState<KuryeOlApplication | null>(null);
+  const [sendLinkEk1Plaka, setSendLinkEk1Plaka] = useState('');
+  const [sendLinkEk1MarkaModel, setSendLinkEk1MarkaModel] = useState('');
+  const [sendLinkEk1ModelYili, setSendLinkEk1ModelYili] = useState('');
+  const [sendLinkEk1SasiNo, setSendLinkEk1SasiNo] = useState('');
+  const [sendLinkEk1MotorNo, setSendLinkEk1MotorNo] = useState('');
   const [refForm, setRefForm] = useState<{ id?: string; title: string; logoUrl: string; link: string }>({ title: '', logoUrl: '', link: '' });
   const [refDialogOpen, setRefDialogOpen] = useState(false);
   const [blogList, setBlogList] = useState<BlogPost[]>([]);
@@ -170,6 +183,11 @@ export default function AdminPage() {
         email,
         adSoyad: adSoyad || undefined,
         selectedDocs,
+        ek1Plaka: ek1Plaka || undefined,
+        ek1MarkaModel: ek1MarkaModel || undefined,
+        ek1ModelYili: ek1ModelYili || undefined,
+        ek1SasiNo: ek1SasiNo || undefined,
+        ek1MotorNo: ek1MotorNo || undefined,
       });
 
       console.log('Request created:', request);
@@ -188,6 +206,11 @@ export default function AdminPage() {
       setAdSoyad('');
       setSelectedDocs([]);
       setSelectAll(false);
+      setEk1Plaka('');
+      setEk1MarkaModel('');
+      setEk1ModelYili('');
+      setEk1SasiNo('');
+      setEk1MotorNo('');
       loadRequests();
     } catch (error) {
       console.error('Error creating request:', error);
@@ -278,6 +301,11 @@ export default function AdminPage() {
         email: sendLinkApp.email,
         adSoyad: sendLinkApp.adSoyad,
         selectedDocs: sendLinkSelectedDocs,
+        ek1Plaka: sendLinkEk1Plaka || undefined,
+        ek1MarkaModel: sendLinkEk1MarkaModel || undefined,
+        ek1ModelYili: sendLinkEk1ModelYili || undefined,
+        ek1SasiNo: sendLinkEk1SasiNo || undefined,
+        ek1MotorNo: sendLinkEk1MotorNo || undefined,
       });
       kuryeOlStore.setStatus(sendLinkApp.id, 'approved', request.token);
       refreshKuryeOl();
@@ -285,6 +313,11 @@ export default function AdminPage() {
       setSendSuccess(true);
       setSendLinkApp(null);
       setSendLinkSelectedDocs([]);
+      setSendLinkEk1Plaka('');
+      setSendLinkEk1MarkaModel('');
+      setSendLinkEk1ModelYili('');
+      setSendLinkEk1SasiNo('');
+      setSendLinkEk1MotorNo('');
       loadRequests();
     } catch {
       alert('İmza isteği oluşturulurken hata oluştu.');
@@ -1002,7 +1035,7 @@ export default function AdminPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setPreviewDoc(doc)}
+                        onClick={() => { setPreviewDoc(doc); setPreviewVariables(null); }}
                         className="w-full sm:w-auto self-stretch sm:self-auto"
                       >
                         <Eye className="h-4 w-4 sm:mr-1" />
@@ -1057,6 +1090,57 @@ export default function AdminPage() {
                       onChange={(e) => setAdSoyad(e.target.value)}
                     />
                   </div>
+
+                  {selectedDocs.includes(FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE) && (
+                    <div className="p-4 border rounded-lg space-y-3 bg-gray-50/50">
+                      <p className="text-sm font-medium text-gray-700">
+                        EK-1 B Tipi Taşıt Kiralama Sözleşmesi Ödeme Detayları — Motosiklet bilgileri (opsiyonel)
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid gap-1">
+                          <Label htmlFor="ek1Plaka">Plaka</Label>
+                          <Input id="ek1Plaka" placeholder="34 ABC 123" value={ek1Plaka} onChange={(e) => setEk1Plaka(e.target.value)} />
+                        </div>
+                        <div className="grid gap-1">
+                          <Label htmlFor="ek1MarkaModel">Marka / Model</Label>
+                          <Input id="ek1MarkaModel" placeholder="Honda PCX" value={ek1MarkaModel} onChange={(e) => setEk1MarkaModel(e.target.value)} />
+                        </div>
+                        <div className="grid gap-1">
+                          <Label htmlFor="ek1ModelYili">Model Yılı</Label>
+                          <Input id="ek1ModelYili" placeholder="2024" value={ek1ModelYili} onChange={(e) => setEk1ModelYili(e.target.value)} />
+                        </div>
+                        <div className="grid gap-1">
+                          <Label htmlFor="ek1SasiNo">Şasi No</Label>
+                          <Input id="ek1SasiNo" placeholder="" value={ek1SasiNo} onChange={(e) => setEk1SasiNo(e.target.value)} />
+                        </div>
+                        <div className="grid gap-1 sm:col-span-2">
+                          <Label htmlFor="ek1MotorNo">Motor No</Label>
+                          <Input id="ek1MotorNo" placeholder="" value={ek1MotorNo} onChange={(e) => setEk1MotorNo(e.target.value)} />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const ek1Doc = getDocumentByCode(FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE);
+                          if (ek1Doc) {
+                            setPreviewDoc(ek1Doc);
+                            setPreviewVariables({
+                              plaka: ek1Plaka,
+                              markaModel: ek1MarkaModel,
+                              modelYili: ek1ModelYili,
+                              sasiNo: ek1SasiNo,
+                              motorNo: ek1MotorNo,
+                            });
+                          }
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        EK-1 önizle
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -1115,7 +1199,7 @@ export default function AdminPage() {
             <div className="h-[50vh] sm:h-[600px] min-h-[300px] flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
               {previewDoc.contentHtml ? (
                 <iframe
-                  srcDoc={previewDoc.contentHtml}
+                  srcDoc={injectVariablesIntoHtml(previewDoc.contentHtml, previewVariables ?? {})}
                   title={previewDoc.title}
                   className="w-full h-full min-h-[300px] border-0 rounded-lg bg-white"
                   sandbox="allow-same-origin"
@@ -1403,7 +1487,17 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Kurye ol: İmza linki gönder dialog */}
-      <Dialog open={!!sendLinkApp} onOpenChange={(open) => !open && setSendLinkApp(null)}>
+      <Dialog open={!!sendLinkApp} onOpenChange={(open) => {
+        if (!open) {
+          setSendLinkApp(null);
+          setSendLinkSelectedDocs([]);
+          setSendLinkEk1Plaka('');
+          setSendLinkEk1MarkaModel('');
+          setSendLinkEk1ModelYili('');
+          setSendLinkEk1SasiNo('');
+          setSendLinkEk1MotorNo('');
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>İmza Linki Gönder</DialogTitle>
@@ -1435,6 +1529,18 @@ export default function AdminPage() {
                   </label>
                 ))}
               </div>
+              {sendLinkSelectedDocs.includes(FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE) && (
+                <div className="p-3 border rounded-lg space-y-2 bg-gray-50/50">
+                  <p className="text-sm font-medium text-gray-700">EK-1 Ödeme Detayları — Motosiklet bilgileri (opsiyonel)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Plaka" value={sendLinkEk1Plaka} onChange={(e) => setSendLinkEk1Plaka(e.target.value)} />
+                    <Input placeholder="Marka / Model" value={sendLinkEk1MarkaModel} onChange={(e) => setSendLinkEk1MarkaModel(e.target.value)} />
+                    <Input placeholder="Model Yılı" value={sendLinkEk1ModelYili} onChange={(e) => setSendLinkEk1ModelYili(e.target.value)} />
+                    <Input placeholder="Şasi No" value={sendLinkEk1SasiNo} onChange={(e) => setSendLinkEk1SasiNo(e.target.value)} />
+                    <Input placeholder="Motor No" className="col-span-2" value={sendLinkEk1MotorNo} onChange={(e) => setSendLinkEk1MotorNo(e.target.value)} />
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button onClick={handleSendLinkFromKuryeOl} disabled={sendLinkSelectedDocs.length === 0}>
                   Link Oluştur ve Kopyala

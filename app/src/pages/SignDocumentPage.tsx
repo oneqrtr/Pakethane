@@ -59,6 +59,11 @@ function getFilledHtml(
     cepTelefonu: request?.cepNumarasi ?? '',
     surucuBelgesiTarihi: request?.surucuBelgesiTarihi ?? '',
     surucuSicilNo: request?.surucuSicilNo ?? '',
+    plaka: request?.ek1Plaka ?? '',
+    markaModel: request?.ek1MarkaModel ?? '',
+    modelYili: request?.ek1ModelYili ?? '',
+    sasiNo: request?.ek1SasiNo ?? '',
+    motorNo: request?.ek1MotorNo ?? '',
     ...kkdRowsToVariables(kkdRows, imzaTarihiForKkd ?? tarih),
   };
   let html = injectVariablesIntoHtml(contentHtml, baseVars);

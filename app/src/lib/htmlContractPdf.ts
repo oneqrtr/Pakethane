@@ -44,6 +44,11 @@ export function getFilledSignedHtml(
     cepTelefonu: request.cepNumarasi ?? '',
     surucuBelgesiTarihi: request.surucuBelgesiTarihi ?? '',
     surucuSicilNo: request.surucuSicilNo ?? '',
+    plaka: request.ek1Plaka ?? '',
+    markaModel: request.ek1MarkaModel ?? '',
+    modelYili: request.ek1ModelYili ?? '',
+    sasiNo: request.ek1SasiNo ?? '',
+    motorNo: request.ek1MotorNo ?? '',
     ...kkdRowsToVariables(formData?.kkdRows, imzaTarihi),
   });
   return injectSignatureIntoHtml(html, signaturePng);

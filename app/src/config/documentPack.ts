@@ -15,6 +15,7 @@ import kisiKoruyucuMalzemeTeslimTutanagiHtml from '@/config/contracts/kisiKoruyu
 
 // Document Pack Configuration
 export const KKD_TESLIM_TUTANAGI_CODE = 'KKD_TESLIM_TUTANAGI';
+export const FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE = 'FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI';
 export const DOCUMENT_PACK: DocumentDefinition[] = [
   {
     code: 'FRANCHISE_SOZLESMESI',

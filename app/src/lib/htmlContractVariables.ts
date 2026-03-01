@@ -39,6 +39,12 @@ export type HtmlContractVariables = {
   kkdRow8Tarih?: string;
   kkdRow9Tarih?: string;
   kkdRow10Tarih?: string;
+  /** EK-1 B Tipi Ödeme Detayları: motosiklet bilgileri */
+  plaka?: string;
+  markaModel?: string;
+  modelYili?: string;
+  sasiNo?: string;
+  motorNo?: string;
 };
 
 const VAR_PATTERN = /\{\{(\w+)\}\}/g;
@@ -96,6 +102,11 @@ export function injectVariablesIntoHtml(
     kkdRow8Tarih: variables.kkdRow8Tarih ?? '',
     kkdRow9Tarih: variables.kkdRow9Tarih ?? '',
     kkdRow10Tarih: variables.kkdRow10Tarih ?? '',
+    plaka: variables.plaka ?? '',
+    markaModel: variables.markaModel ?? '',
+    modelYili: variables.modelYili ?? '',
+    sasiNo: variables.sasiNo ?? '',
+    motorNo: variables.motorNo ?? '',
   };
   return html.replace(VAR_PATTERN, (_, key) => map[key] ?? '');
 }
