@@ -101,7 +101,7 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<SigningRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog' | 'log'>('kurye-ol');
+  const [activeSection, setActiveSection] = useState<'kurye-ol' | 'hizmet-al' | 'send' | 'signed' | 'references' | 'blog' | 'log'>('kurye-ol');
   const [signedFilter, setSignedFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isFillingSourcePdf, setIsFillingSourcePdf] = useState(false);
@@ -368,7 +368,7 @@ export default function AdminPage() {
     }
   };
 
-  const scrollToSection = (sectionId: 'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog' | 'log') => {
+  const scrollToSection = (sectionId: 'kurye-ol' | 'hizmet-al' | 'send' | 'signed' | 'references' | 'blog' | 'log') => {
     setActiveSection(sectionId);
     setIsSidebarOpen(false);
     const element = document.getElementById(sectionId);
@@ -410,12 +410,15 @@ export default function AdminPage() {
   const menuItems = [
     { id: 'kurye-ol' as const, label: 'Kurye Ol Başvuruları', icon: Truck },
     { id: 'hizmet-al' as const, label: 'Hizmet Al Başvuruları', icon: Package },
-    { id: 'documents' as const, label: 'Belge Paketi', icon: FileText },
     { id: 'send' as const, label: 'İmza Linki Gönder', icon: Send },
     { id: 'signed' as const, label: 'İmzalananlar', icon: CheckCircle },
-    { id: 'references' as const, label: 'Referanslar', icon: Star },
-    { id: 'blog' as const, label: 'Blog', icon: BookOpen },
-    ...(isSuperAdmin ? [{ id: 'log' as const, label: 'Log', icon: ScrollText }] : []),
+    ...(isSuperAdmin
+      ? [
+          { id: 'references' as const, label: 'Referanslar', icon: Star },
+          { id: 'blog' as const, label: 'Blog', icon: BookOpen },
+          { id: 'log' as const, label: 'Log', icon: ScrollText },
+        ]
+      : []),
   ];
 
   if (!isAdmin) {
@@ -698,7 +701,7 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </section>
-          ) : activeSection === 'references' ? (
+          ) : activeSection === 'references' && isSuperAdmin ? (
             <section id="references" className="scroll-mt-8">
               <Card>
                 <CardHeader>
@@ -756,7 +759,7 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </section>
-          ) : activeSection === 'blog' ? (
+          ) : activeSection === 'blog' && isSuperAdmin ? (
             <section id="blog" className="scroll-mt-8">
               <Card>
                 <CardHeader>
@@ -999,59 +1002,19 @@ export default function AdminPage() {
             </section>
           ) : (
             <>
-          {/* Section A: Belge Paketi */}
-          <section id="documents" className="scroll-mt-8">
+          {/* İmza Linki Gönder: belge seçimi + form */}
+          <section id="send" className="scroll-mt-8">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Belge Paketi
+                  <Send className="h-5 w-5" />
+                  Kullanıcıya Gönder
                 </CardTitle>
                 <CardDescription>
-                  İmza için kullanılabilir belgeleri seçin ve önizleyin.
+                  İmza için belgeleri seçin, e-posta ve ad soyad girin, panel linki oluşturun.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">PDF Form Alanı Kontrolü</p>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Sözleşme PDF&apos;inde doldurulabilir form alanı var mı kontrol edin. Varsa kullanıcı bilgileriyle otomatik doldurma uygulanabilir.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleInspectPdfForm}
-                    disabled={isInspectingPdf}
-                  >
-                    {isInspectingPdf ? 'Kontrol ediliyor...' : 'PDF Form Alanlarını Kontrol Et'}
-                  </Button>
-                  {pdfInspectResult && (
-                    <div className="mt-3 p-3 bg-white rounded border text-sm">
-                      {pdfInspectResult.error ? (
-                        <p className="text-red-600">{pdfInspectResult.error}</p>
-                      ) : pdfInspectResult.hasForm ? (
-                        <>
-                          <p className="text-green-700 font-medium mb-2">
-                            PDF'de {pdfInspectResult.fieldCount} adet form alanı bulundu
-                          </p>
-                          <p className="text-xs text-gray-600 mb-1">Alan isimleri:</p>
-                          <ul className="text-xs font-mono text-gray-700 max-h-32 overflow-y-auto space-y-1">
-                            {pdfInspectResult.fields.map((f) => (
-                              <li key={f.name}>
-                                {f.name} <span className="text-gray-400">({f.type})</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      ) : (
-                        <p className="text-amber-700">
-                          PDF&apos;de form alanı bulunamadı. Doldurulabilir alanlar yok.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 <div className="mb-4">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
@@ -1062,7 +1025,7 @@ export default function AdminPage() {
                   </label>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 mb-6">
                   {DOCUMENT_PACK.map((doc) => (
                     <div
                       key={doc.code}
@@ -1119,29 +1082,13 @@ export default function AdminPage() {
                 </div>
 
                 {selectedDocs.length > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-800">
                       <strong>{selectedDocs.length}</strong> belge seçildi
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </section>
 
-          {/* Section B: Kullanıcıya Gönder */}
-          <section id="send" className="scroll-mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5" />
-                  Kullanıcıya Gönder
-                </CardTitle>
-                <CardDescription>
-                  Kurye adayına gönderilecek belgeleri seçip imza paneli linki oluşturun.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
                 <div className="space-y-4">
                   <div className="grid gap-2">
                     <Label htmlFor="email">E-posta Adresi *</Label>
