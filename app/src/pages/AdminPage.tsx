@@ -42,6 +42,7 @@ import {
   Plus,
   Pencil,
   BookOpen,
+  ScrollText,
 } from 'lucide-react';
 import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH, KKD_TESLIM_TUTANAGI_CODE, FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE } from '@/config/documentPack';
 import {
@@ -63,15 +64,21 @@ import { inspectPdfFormFields } from '@/lib/inspectPdfFormFields';
 import { downloadSignedHtmlDocsAsPdf, hasSignedHtmlDocs } from '@/lib/htmlContractPdf';
 import { injectVariablesIntoHtml } from '@/lib/htmlContractVariables';
 import type { HtmlContractVariables } from '@/lib/htmlContractVariables';
+import { adminLogStore } from '@/lib/store/adminLogStore';
 
 const ADMIN_PASSWORD = 'Phane!';
+const SUPERADMIN_PASSWORD = 'Mkays!';
 const ADMIN_AUTH_KEY = 'admin_authenticated';
+const SUPERADMIN_AUTH_KEY = 'superadmin_authenticated';
 
 export default function AdminPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isAdmin = searchParams.get('admin') === 'true';
   const [isAuthenticated, setIsAuthenticated] = useState(() =>
     typeof sessionStorage !== 'undefined' && sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true'
+  );
+  const [isSuperAdmin, setIsSuperAdmin] = useState(() =>
+    typeof sessionStorage !== 'undefined' && sessionStorage.getItem(SUPERADMIN_AUTH_KEY) === 'true'
   );
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -94,7 +101,7 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<SigningRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog'>('kurye-ol');
+  const [activeSection, setActiveSection] = useState<'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog' | 'log'>('kurye-ol');
   const [signedFilter, setSignedFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isFillingSourcePdf, setIsFillingSourcePdf] = useState(false);
@@ -361,7 +368,7 @@ export default function AdminPage() {
     }
   };
 
-  const scrollToSection = (sectionId: 'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog') => {
+  const scrollToSection = (sectionId: 'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog' | 'log') => {
     setActiveSection(sectionId);
     setIsSidebarOpen(false);
     const element = document.getElementById(sectionId);
@@ -371,9 +378,19 @@ export default function AdminPage() {
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError('');
-    if (password === ADMIN_PASSWORD) {
+    if (password === SUPERADMIN_PASSWORD) {
       sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      sessionStorage.setItem(SUPERADMIN_AUTH_KEY, 'true');
       setIsAuthenticated(true);
+      setIsSuperAdmin(true);
+      adminLogStore.add('superadmin', 'giriş');
+      setPassword('');
+    } else if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      sessionStorage.removeItem(SUPERADMIN_AUTH_KEY);
+      setIsAuthenticated(true);
+      setIsSuperAdmin(false);
+      adminLogStore.add('admin', 'giriş');
       setPassword('');
     } else {
       setPasswordError('Hatalı şifre. Lütfen tekrar deneyin.');
@@ -381,8 +398,12 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
+    const wasSuperAdmin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(SUPERADMIN_AUTH_KEY) === 'true';
+    adminLogStore.add(wasSuperAdmin ? 'superadmin' : 'admin', 'çıkış');
     sessionStorage.removeItem(ADMIN_AUTH_KEY);
+    sessionStorage.removeItem(SUPERADMIN_AUTH_KEY);
     setIsAuthenticated(false);
+    setIsSuperAdmin(false);
     setSearchParams({});
   };
 
@@ -394,6 +415,7 @@ export default function AdminPage() {
     { id: 'signed' as const, label: 'İmzalananlar', icon: CheckCircle },
     { id: 'references' as const, label: 'Referanslar', icon: Star },
     { id: 'blog' as const, label: 'Blog', icon: BookOpen },
+    ...(isSuperAdmin ? [{ id: 'log' as const, label: 'Log', icon: ScrollText }] : []),
   ];
 
   if (!isAdmin) {
@@ -473,7 +495,7 @@ export default function AdminPage() {
               <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-20 w-auto object-contain" />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Pakethane Lojistik</h1>
-                <p className="text-xs text-gray-500">Admin Paneli</p>
+                <p className="text-xs text-gray-500">{isSuperAdmin ? 'Superadmin Paneli' : 'Admin Paneli'}</p>
               </div>
             </div>
             <Button
@@ -537,7 +559,7 @@ export default function AdminPage() {
             <Menu className="h-5 w-5" />
           </Button>
           <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-20 w-auto object-contain" />
-          <h1 className="text-lg font-semibold">Admin Paneli</h1>
+          <h1 className="text-lg font-semibold">{isSuperAdmin ? 'Superadmin' : 'Admin'} Paneli</h1>
         </header>
 
         <div className="p-4 lg:p-8 space-y-12 max-w-6xl mx-auto">
@@ -920,6 +942,57 @@ export default function AdminPage() {
                         </TableBody>
                       </Table>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          ) : activeSection === 'log' ? (
+            <section id="log" className="scroll-mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ScrollText className="h-5 w-5" />
+                    Giriş / Çıkış Logu
+                  </CardTitle>
+                  <CardDescription>
+                    Admin ve Superadmin giriş-çıkış kayıtları. Tarih ve saat bilgisiyle listelenir.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {adminLogStore.getAll().length === 0 ? (
+                    <p className="text-center text-muted-foreground py-6">Henüz log kaydı yok.</p>
+                  ) : (
+                  <div className="overflow-x-auto -mx-2 sm:mx-0">
+                    <Table className="min-w-[480px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tarih</TableHead>
+                          <TableHead>Saat</TableHead>
+                          <TableHead>Rol</TableHead>
+                          <TableHead>İşlem</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {adminLogStore.getAll().map((entry, idx) => {
+                          const d = new Date(entry.at);
+                          const dateStr = d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                          const timeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                          return (
+                            <TableRow key={idx}>
+                              <TableCell>{dateStr}</TableCell>
+                              <TableCell>{timeStr}</TableCell>
+                              <TableCell>
+                                <Badge variant={entry.role === 'superadmin' ? 'default' : 'secondary'}>
+                                  {entry.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{entry.action === 'giriş' ? 'Giriş' : 'Çıkış'}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                   )}
                 </CardContent>
               </Card>

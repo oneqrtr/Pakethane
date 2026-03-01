@@ -80,9 +80,8 @@ export default function HomePage() {
               alt="Pakethane Lojistik"
               className="h-14 sm:h-16 w-auto flex-shrink-0 object-contain"
             />
-            <span className="text-lg sm:text-xl font-bold text-gray-900 truncate hidden sm:inline">
-              Pakethane Lojistik
-            </span>
+            <span className="text-lg font-bold text-gray-900 truncate sm:hidden">Pakethane</span>
+            <span className="text-lg sm:text-xl font-bold text-gray-900 truncate hidden sm:inline">Pakethane Lojistik</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-6">
