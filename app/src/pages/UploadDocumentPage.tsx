@@ -13,7 +13,9 @@ import {
     Upload,
     X,
     Image as ImageIcon,
-    Save
+    Save,
+    Camera,
+    FolderOpen
 } from 'lucide-react';
 import { mockStore } from '@/lib/store/mockStore';
 import { getDocumentByCode } from '@/config/documentPack';
@@ -43,6 +45,8 @@ export default function UploadDocumentPage() {
     // File input refs
     const frontInputRef = useRef<HTMLInputElement>(null);
     const backInputRef = useRef<HTMLInputElement>(null);
+    const frontCameraRef = useRef<HTMLInputElement>(null);
+    const backCameraRef = useRef<HTMLInputElement>(null);
     const pdfInputRef = useRef<HTMLInputElement>(null);
     const documentUploadRef = useRef<HTMLInputElement>(null);
 
@@ -125,11 +129,14 @@ export default function UploadDocumentPage() {
         reader.readAsDataURL(file);
     };
 
-    const handleRemoveFile = (setter: (val: string | null) => void, inputRef: React.RefObject<HTMLInputElement | null>) => {
+    const handleRemoveFile = (
+        setter: (val: string | null) => void,
+        ...inputRefs: (React.RefObject<HTMLInputElement | null>)[]
+    ) => {
         setter(null);
-        if (inputRef.current) {
-            inputRef.current.value = '';
-        }
+        inputRefs.forEach((ref) => {
+            if (ref.current) ref.current.value = '';
+        });
     };
 
     const handleSubmit = async () => {
@@ -172,10 +179,15 @@ export default function UploadDocumentPage() {
                 signatureData.backImage = backImage;
             }
 
-            await mockStore.signDocument(signatureData); // Re-using signDocument as it just upserts into signatures map
+            const updatedRequest = await mockStore.signDocument(signatureData);
+            if (!updatedRequest) {
+                alert('Kayıt yapılamadı. Lütfen sayfayı yenileyip tekrar deneyin.');
+                return;
+            }
+            setRequest(updatedRequest);
             setSubmitSuccess(true);
-        } catch (error) {
-            console.error(error);
+        } catch (err) {
+            console.error(err);
             alert('Dosyalar kaydedilirken bir hata oluştu.');
         } finally {
             setIsSubmitting(false);
@@ -249,7 +261,7 @@ export default function UploadDocumentPage() {
                                                     variant="destructive"
                                                     size="icon"
                                                     className="absolute -top-2 -right-2 h-8 w-8 rounded-full"
-                                                    onClick={() => handleRemoveFile(setFrontImage, frontInputRef)}
+                                                    onClick={() => handleRemoveFile(setFrontImage, frontInputRef, frontCameraRef)}
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
@@ -261,17 +273,30 @@ export default function UploadDocumentPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium">Fotoğraf Yükle</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Veya kamerayı kullan</p>
+                                                    <p className="text-xs text-gray-500 mt-1">Ön yüzü dosyadan seçin veya kamerayla çekin</p>
                                                 </div>
-                                                <Button variant="outline" size="sm" onClick={() => frontInputRef.current?.click()}>
-                                                    <Upload className="h-4 w-4 mr-2" />
-                                                    Seç
-                                                </Button>
+                                                <div className="flex flex-wrap gap-2 justify-center">
+                                                    <Button variant="outline" size="sm" onClick={() => frontInputRef.current?.click()}>
+                                                        <FolderOpen className="h-4 w-4 mr-2" />
+                                                        Dosya Seç
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => frontCameraRef.current?.click()}>
+                                                        <Camera className="h-4 w-4 mr-2" />
+                                                        Kamerayı Kullan
+                                                    </Button>
+                                                </div>
                                             </>
                                         )}
                                         <input
                                             type="file"
                                             ref={frontInputRef}
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => handleFileChange(e, setFrontImage, 'image')}
+                                        />
+                                        <input
+                                            type="file"
+                                            ref={frontCameraRef}
                                             className="hidden"
                                             accept="image/*"
                                             capture="environment"
@@ -294,7 +319,7 @@ export default function UploadDocumentPage() {
                                                     variant="destructive"
                                                     size="icon"
                                                     className="absolute -top-2 -right-2 h-8 w-8 rounded-full"
-                                                    onClick={() => handleRemoveFile(setBackImage, backInputRef)}
+                                                    onClick={() => handleRemoveFile(setBackImage, backInputRef, backCameraRef)}
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
@@ -306,17 +331,30 @@ export default function UploadDocumentPage() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium">Fotoğraf Yükle</p>
-                                                    <p className="text-xs text-gray-500 mt-1">Veya kamerayı kullan</p>
+                                                    <p className="text-xs text-gray-500 mt-1">Arka yüzü dosyadan seçin veya kamerayla çekin</p>
                                                 </div>
-                                                <Button variant="outline" size="sm" onClick={() => backInputRef.current?.click()}>
-                                                    <Upload className="h-4 w-4 mr-2" />
-                                                    Seç
-                                                </Button>
+                                                <div className="flex flex-wrap gap-2 justify-center">
+                                                    <Button variant="outline" size="sm" onClick={() => backInputRef.current?.click()}>
+                                                        <FolderOpen className="h-4 w-4 mr-2" />
+                                                        Dosya Seç
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" onClick={() => backCameraRef.current?.click()}>
+                                                        <Camera className="h-4 w-4 mr-2" />
+                                                        Kamerayı Kullan
+                                                    </Button>
+                                                </div>
                                             </>
                                         )}
                                         <input
                                             type="file"
                                             ref={backInputRef}
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={(e) => handleFileChange(e, setBackImage, 'image')}
+                                        />
+                                        <input
+                                            type="file"
+                                            ref={backCameraRef}
                                             className="hidden"
                                             accept="image/*"
                                             capture="environment"
