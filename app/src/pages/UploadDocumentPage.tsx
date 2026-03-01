@@ -35,6 +35,7 @@ export default function UploadDocumentPage() {
     const [frontImage, setFrontImage] = useState<string | null>(null);
     const [backImage, setBackImage] = useState<string | null>(null);
     const [taxPlatePdf, setTaxPlatePdf] = useState<string | null>(null);
+    const [uploadedDocument, setUploadedDocument] = useState<string | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -43,6 +44,7 @@ export default function UploadDocumentPage() {
     const frontInputRef = useRef<HTMLInputElement>(null);
     const backInputRef = useRef<HTMLInputElement>(null);
     const pdfInputRef = useRef<HTMLInputElement>(null);
+    const documentUploadRef = useRef<HTMLInputElement>(null);
 
     const document = getDocumentByCode(docCode);
 
@@ -80,6 +82,7 @@ export default function UploadDocumentPage() {
                 setFrontImage(existingSignature.frontImage || null);
                 setBackImage(existingSignature.backImage || null);
                 setTaxPlatePdf(existingSignature.taxPlatePdf || null);
+                setUploadedDocument(existingSignature.uploadedDocument || null);
             }
         }
         setIsLoading(false);
@@ -88,7 +91,7 @@ export default function UploadDocumentPage() {
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement>,
         setter: (val: string | null) => void,
-        type: 'image' | 'pdf'
+        type: 'image' | 'pdf' | 'image_or_pdf'
     ) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -100,6 +103,10 @@ export default function UploadDocumentPage() {
         }
         if (type === 'pdf' && file.type !== 'application/pdf') {
             alert('Lütfen PDF formatında bir dosya seçin.');
+            return;
+        }
+        if (type === 'image_or_pdf' && !file.type.startsWith('image/') && file.type !== 'application/pdf') {
+            alert('Lütfen fotoğraf (JPG, PNG vb.) veya PDF dosyası seçin.');
             return;
         }
 
@@ -131,12 +138,17 @@ export default function UploadDocumentPage() {
         // Validation
         if (document.type === 'identity_card' || document.type === 'driver_license') {
             if (!frontImage || !backImage) {
-                alert('Lütfen nufüs cüzdanı ve ehliyet için hem ön hem arka yüz fotoğrafını yükleyin.');
+                alert('Lütfen hem ön hem arka yüz fotoğrafını yükleyin.');
                 return;
             }
         } else if (document.type === 'tax_plate') {
             if (!taxPlatePdf) {
                 alert('Lütfen vergi levhası PDF dosyasını yükleyin.');
+                return;
+            }
+        } else if (document.type === 'residence' || document.type === 'criminal_record') {
+            if (!uploadedDocument) {
+                alert('Lütfen belgeyi fotoğraf veya PDF olarak yükleyin.');
                 return;
             }
         }
@@ -153,6 +165,8 @@ export default function UploadDocumentPage() {
 
             if (document.type === 'tax_plate') {
                 signatureData.taxPlatePdf = taxPlatePdf;
+            } else if (document.type === 'residence' || document.type === 'criminal_record') {
+                signatureData.uploadedDocument = uploadedDocument;
             } else {
                 signatureData.frontImage = frontImage;
                 signatureData.backImage = backImage;
@@ -177,6 +191,7 @@ export default function UploadDocumentPage() {
 
     const isIdentity = document.type === 'identity_card' || document.type === 'driver_license';
     const isTaxPlate = document.type === 'tax_plate';
+    const isFileDocument = document.type === 'residence' || document.type === 'criminal_record';
 
     return (
         <div className="min-h-screen bg-gray-50 pb-10">
@@ -185,6 +200,7 @@ export default function UploadDocumentPage() {
                 <div className="max-w-3xl mx-auto px-4 py-3 sm:py-4">
                     <div className="flex items-start sm:items-center justify-between gap-2">
                         <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-8 sm:h-10 w-auto flex-shrink-0 object-contain" />
                             <Button variant="ghost" size="icon" onClick={() => navigate(`/panel?token=${token}`)} className="flex-shrink-0">
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
@@ -210,6 +226,8 @@ export default function UploadDocumentPage() {
                         <CardDescription>
                             {isIdentity
                                 ? 'Lütfen belgenizin ön ve arka yüzünün fotoğrafını çekip yükleyiniz.'
+                                : isFileDocument
+                                ? 'Lütfen belgeyi fotoğraf veya PDF olarak yükleyiniz.'
                                 : 'Lütfen vergi levhanızı PDF formatında yükleyiniz.'}
                         </CardDescription>
                     </CardHeader>
@@ -309,6 +327,64 @@ export default function UploadDocumentPage() {
                             </div>
                         )}
 
+                        {isFileDocument && (
+                            <div className="space-y-3">
+                                <Label>{document.title} (Fotoğraf veya PDF)</Label>
+                                <div className={cn(
+                                    "border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center text-center gap-4 transition-colors relative bg-gray-50/50",
+                                    uploadedDocument ? "border-green-500 bg-green-50/10" : "border-gray-300 hover:bg-gray-50"
+                                )}>
+                                    {uploadedDocument ? (
+                                        <div className="flex flex-col items-center gap-4 p-4 bg-white rounded-lg shadow-sm border w-full max-w-sm">
+                                            {uploadedDocument.startsWith('data:image/') ? (
+                                                <img src={uploadedDocument} alt="Yüklenen belge" className="max-h-[200px] w-auto object-contain rounded-md" />
+                                            ) : (
+                                                <div className="flex items-center gap-4 p-4 w-full">
+                                                    <div className="bg-red-100 p-2 rounded text-red-600">
+                                                        <FileText className="h-6 w-6" />
+                                                    </div>
+                                                    <div className="flex-1 text-left overflow-hidden">
+                                                        <p className="text-sm font-medium truncate">Belge.pdf</p>
+                                                        <p className="text-xs text-green-600 font-medium">Yüklendi</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => handleRemoveFile(setUploadedDocument, documentUploadRef)}
+                                            >
+                                                <X className="h-4 w-4 mr-1" />
+                                                Kaldır
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                                <Upload className="h-8 w-8" />
+                                            </div>
+                                            <div>
+                                                <p className="text-lg font-medium">Fotoğraf veya PDF Yükleyin</p>
+                                                <p className="text-sm text-gray-500 mt-1">Maksimum dosya boyutu: 5MB</p>
+                                            </div>
+                                            <Button onClick={() => documentUploadRef.current?.click()}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Dosya Seç
+                                            </Button>
+                                        </>
+                                    )}
+                                    <input
+                                        type="file"
+                                        ref={documentUploadRef}
+                                        className="hidden"
+                                        accept="image/*,application/pdf"
+                                        onChange={(e) => handleFileChange(e, setUploadedDocument, 'image_or_pdf')}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         {isTaxPlate && (
                             <div className="space-y-3">
                                 <Label>Vergi Levhası (PDF)</Label>
@@ -366,7 +442,7 @@ export default function UploadDocumentPage() {
                             className="w-full"
                             size="lg"
                             onClick={handleSubmit}
-                            disabled={isSubmitting || (isIdentity && (!frontImage || !backImage)) || (isTaxPlate && !taxPlatePdf)}
+                            disabled={isSubmitting || (isIdentity && (!frontImage || !backImage)) || (isTaxPlate && !taxPlatePdf) || (isFileDocument && !uploadedDocument)}
                         >
                             {isSubmitting ? 'Kaydediliyor...' : 'Kaydet ve Gönder'}
                             {!isSubmitting && <Save className="ml-2 h-4 w-4" />}

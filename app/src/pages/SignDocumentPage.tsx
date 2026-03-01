@@ -17,8 +17,53 @@ import {
 import { mockStore } from '@/lib/store/mockStore';
 import { getDocumentByCode } from '@/config/documentPack';
 import type { SigningRequest } from '@/types';
+import { SIGNATURE_PLACEHOLDER_ID } from '@/types';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { SignatureCanvas } from '@/components/signature/SignatureCanvas';
+import { injectVariablesIntoHtml, kkdRowsToVariables } from '@/lib/htmlContractVariables';
+import { KKD_TESLIM_TUTANAGI_CODE } from '@/config/documentPack';
+
+/** Şablonda imzanın konacağı alan; boşluk farklarına toleranslı eşleşir. */
+const SIGNATURE_PLACEHOLDER_REGEX = new RegExp(
+  `<div\\s+id="${SIGNATURE_PLACEHOLDER_ID}"[^>]*>\\s*</div>`,
+  'is'
+);
+
+function injectSignatureIntoHtml(html: string, signatureDataUrl: string | null): string {
+  if (!signatureDataUrl) return html;
+  const signedBlock = `<div id="${SIGNATURE_PLACEHOLDER_ID}" class="signature-box"><img src="${signatureDataUrl}" alt="İmza" class="signature-img" style="max-width:180px;max-height:70px;object-fit:contain;" /></div>`;
+  return html.replace(SIGNATURE_PLACEHOLDER_REGEX, signedBlock);
+}
+
+/** HTML belgeyi istek/form verileri ve imza ile doldurur ({{adSoyad}}, {{tarih}} vb. + imza). KKD için teslim alındı işaretli satırlarda Tarih sütununa imzaTarihiForKkd yazılır. */
+function getFilledHtml(
+  contentHtml: string,
+  request: SigningRequest | null,
+  formAdSoyad: string,
+  formTcKimlik: string,
+  signatureDataUrl: string | null,
+  kkdRows?: number[],
+  imzaTarihiForKkd?: string
+): string {
+  const tarih = (request?.createdAt
+    ? new Date(request.createdAt)
+    : new Date()
+  ).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const baseVars = {
+    adSoyad: formAdSoyad || request?.adSoyad || '',
+    vergiDairesiVkn: formTcKimlik || request?.tcKimlik || '',
+    tcKimlik: formTcKimlik || request?.tcKimlik || '',
+    adres: request?.adres ?? '',
+    email: request?.email || '',
+    tarih,
+    cepTelefonu: request?.cepNumarasi ?? '',
+    surucuBelgesiTarihi: request?.surucuBelgesiTarihi ?? '',
+    surucuSicilNo: request?.surucuSicilNo ?? '',
+    ...kkdRowsToVariables(kkdRows, imzaTarihiForKkd ?? tarih),
+  };
+  let html = injectVariablesIntoHtml(contentHtml, baseVars);
+  return injectSignatureIntoHtml(html, signatureDataUrl);
+}
 
 export default function SignDocumentPage() {
   const [searchParams] = useSearchParams();
@@ -35,6 +80,7 @@ export default function SignDocumentPage() {
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [adSoyad, setAdSoyad] = useState('');
   const [tcKimlik, setTcKimlik] = useState('');
+  const [kkdRows, setKkdRows] = useState<number[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -76,6 +122,9 @@ export default function SignDocumentPage() {
       );
       if (existingSignature) {
         setConsentChecked(existingSignature.consentChecked ?? false);
+        if (existingSignature.formData?.kkdRows) {
+          setKkdRows(existingSignature.formData.kkdRows);
+        }
       }
     }
 
@@ -110,6 +159,7 @@ export default function SignDocumentPage() {
         formData: {
           adSoyad: adSoyad || undefined,
           tcKimlik: tcKimlik || undefined,
+          ...(docCode === KKD_TESLIM_TUTANAGI_CODE && kkdRows.length > 0 && { kkdRows }),
         },
       });
 
@@ -196,6 +246,7 @@ export default function SignDocumentPage() {
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
           <div className="flex items-start sm:items-center justify-between gap-2">
             <div className="flex items-start gap-3 min-w-0 flex-1">
+              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-8 sm:h-10 w-auto flex-shrink-0 object-contain" />
               <Button
                 variant="ghost"
                 size="icon"
@@ -224,7 +275,7 @@ export default function SignDocumentPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
         <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Left: PDF Viewer */}
+          {/* Left: Belge önizleme (HTML veya PDF) */}
           <div className="order-1">
             <Card className="h-full">
               <CardHeader className="py-4 sm:py-6">
@@ -234,10 +285,34 @@ export default function SignDocumentPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <PDFViewer
-                  document={document}
-                  className="h-[350px] sm:h-[450px] lg:h-[600px]"
-                />
+                {document.contentHtml ? (
+                  <div
+                    className="h-[350px] sm:h-[450px] lg:h-[600px] overflow-auto rounded border bg-white p-4"
+                    dangerouslySetInnerHTML={{
+                      __html: getFilledHtml(
+                        document.contentHtml,
+                        request,
+                        adSoyad,
+                        tcKimlik,
+                        signatureData,
+                        docCode === KKD_TESLIM_TUTANAGI_CODE ? kkdRows : undefined,
+                        docCode === KKD_TESLIM_TUTANAGI_CODE
+                          ? (request?.signatures?.[docCode]?.signedAt
+                              ? new Date(request.signatures[docCode].signedAt)
+                              : request?.createdAt
+                                ? new Date(request.createdAt)
+                                : new Date()
+                            ).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                          : undefined
+                      ),
+                    }}
+                  />
+                ) : (
+                  <PDFViewer
+                    document={document}
+                    className="h-[350px] sm:h-[450px] lg:h-[600px]"
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
@@ -295,6 +370,44 @@ export default function SignDocumentPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* KKD Teslim Tutanağı: Teslim alınan malzemeler (checkbox) */}
+                {docCode === KKD_TESLIM_TUTANAGI_CODE && (
+                  <>
+                    <Separator />
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">
+                        Teslim Aldığınız KKD Malzemeleri (işaretleyin)
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {[
+                          { n: 1, label: 'Kask (Kendimin)' },
+                          { n: 2, label: 'Römork / Çanta / Kutu' },
+                          { n: 3, label: 'Polar / Hırka' },
+                          { n: 4, label: 'T-Shirt' },
+                          { n: 5, label: 'Korumalı Mont' },
+                          { n: 6, label: 'Yağmurluk' },
+                          { n: 7, label: 'Korumalı Pantolon' },
+                          { n: 8, label: 'Diğer (8)' },
+                          { n: 9, label: 'Diğer (9)' },
+                          { n: 10, label: 'Diğer (10)' },
+                        ].map(({ n, label }) => (
+                          <label key={n} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <Checkbox
+                              checked={kkdRows.includes(n)}
+                              onCheckedChange={(checked) => {
+                                setKkdRows((prev) =>
+                                  checked ? [...prev, n].sort((a, b) => a - b) : prev.filter((r) => r !== n)
+                                );
+                              }}
+                            />
+                            <span>{n}. {label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <Separator />
 

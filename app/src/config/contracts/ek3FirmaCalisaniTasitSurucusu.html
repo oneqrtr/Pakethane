@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    .belge-html { font-family: system-ui, 'Segoe UI', sans-serif; font-size: 11px; line-height: 1.45; color: #222; max-width: 210mm; margin: 0 auto; padding: 12px; }
+    .belge-html h1 { font-size: 13px; margin: 0 0 8px 0; text-align: center; }
+    .belge-html h2 { font-size: 12px; margin: 10px 0 4px 0; }
+    .belge-html p { margin: 0 0 5px 0; }
+    .belge-html .alan { text-decoration: underline; min-height: 1.2em; }
+    .belge-html table.detay { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px; }
+    .belge-html table.detay td { padding: 4px 8px; vertical-align: top; }
+    .belge-html table.detay td:first-child { font-weight: 600; width: 180px; }
+    .signature-box { min-height: 56px; margin-top: 8px; border: 1px dashed #999; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .signature-box img { max-width: 180px; max-height: 70px; object-fit: contain; }
+    .imza-bolumu { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <article class="belge-html">
+    <h1>EK – 3 FİRMA ÇALIŞANI TAŞIT SÜRÜCÜSÜNE İLİŞKİN BİLGİLER</h1>
+
+    <p><strong>1.</strong> Taraflar, işbu "Firma Çalışanı Taşıt Sürücüsüne İlişkin Bilgiler" adlı belgenin, Sözleşmenin ayrılmaz bir parçası olduğu hususunda kabul, beyan ve taahhütte bulunmuşlardır.</p>
+
+    <p><strong>2.</strong> İşbu Sözleşme ve eklerinin imzalanması ile birlikte kiralanan aracı kullanmaya yetkili kişinin kimlik bilgileri aşağıdaki şekildedir:</p>
+    <table class="detay">
+      <tr><td>Adı – Soyadı</td><td><span class="alan">{{adSoyad}}</span></td></tr>
+      <tr><td>Kimlik Numarası</td><td><span class="alan">{{tcKimlik}}</span></td></tr>
+      <tr><td>Adresi</td><td><span class="alan">{{adres}}</span></td></tr>
+      <tr><td>Cep Telefonu</td><td><span class="alan">{{cepTelefonu}}</span></td></tr>
+      <tr><td>Sürücü Belgesi Veriliş Tarihi</td><td><span class="alan">{{surucuBelgesiTarihi}}</span></td></tr>
+      <tr><td>Sürücü Sicil Numarası</td><td><span class="alan">{{surucuSicilNo}}</span></td></tr>
+    </table>
+
+    <p><strong>3.</strong> Kiralanan araç, sadece yukarıda bilgileri bulunan Firma yetkilisi/çalışanı tarafından kullanılabilir. İşbu Sözleşme ile eklerini imzalayan Firma yetkilisi, EK – 3'ün kendisi tarafından imzalanması ile birlikte aracın kullanım hakkına sahip olmadığını, bu hakkın sadece yukarı bilgileri bulunan Firma yetkilisi/çalışanı tarafından kullanılabileceğini kabul eder.</p>
+
+    <p><strong>4.</strong> Firma, aracı kullanacak kişinin; mevzuatta zorunlu olarak belirtilen sürücü belgesine sahip olması, iş sağlığı ve güvenliği mevzuatına uygun eğitimlere tabi tutularak bu iş sağlığı ve güvenliği tedbirlerine uygun hareket etmesi, güvenlik ekipmanını eksiksiz kullanması (güvenli sürüşe uygun kask, mont, pantolon, bot ve eldiven vb. kullanması), trafik kurallarına uygun hareket etmesi gibi hususlardan sorumlu olduğunu kabul eder.</p>
+
+    <p><strong>5.</strong> Firma, aracı kullanacak kişinin çalışanı olması halinde, bu kişinin sigorta primlerinin eksiksiz yatırılması hususunda sorumluluğunun bulunduğunu; sigorta primi ödemelerinde eksiklik bulunan veya sigorta primleri hiç ödenmeyen çalışanların, kiralanan aracı hiçbir şart altına kullanmaya yetkili olmadıklarını kabul eder. Firma, aracı kullanan kişinin sigorta primlerinin eksik yatırıldığı veya hiç yatırılmadığı hususunun Pakethane tarafından tespit edilmesi halinde Pakethane'nin, Franchise Sözleşmesi ve işbu Sözleşme dahil tüm Ek Sözleşmeler ile eklerini haklı sebeple, derhal ve bildirimsiz şekilde feshedilebileceğini kabul eder.</p>
+
+    <p><strong>6.</strong> EK – 3 kısmında bulunan belgenin aslı Pakethane'de kalacak, aslı gibidir yapılmış onaylı bir örneği Firma ile paylaşılacaktır.</p>
+
+    <p><strong>7.</strong> İşbu belge Taraflar arasında <span class="alan">{{tarih}}</span> tarihinde imzalanmıştır.</p>
+
+    <div class="imza-bolumu">
+      <p>Pakethane Lojistik ve Teknoloji Hizmetleri Sanayi Ltd. Şti.</p>
+      <p><strong>Firma</strong> — <span class="alan">{{adSoyad}}</span> (TC: <span class="alan">{{tcKimlik}}</span>)</p>
+      <p class="onay-metni">Yukarıdaki metni okudum, anladım ve kabul ediyorum.</p>
+      <div id="signature-placeholder" class="signature-box"></div>
+    </div>
+  </article>
+</body>
+</html>

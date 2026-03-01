@@ -2,13 +2,14 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import type { SigningRequest } from '@/types';
 import { getDocumentByCode } from '@/config/documentPack';
 import { SOURCE_PDF_PATH } from '@/config/documentPack';
-import { PDF_FORM_FIELD_MAP, SIGNATURE_POSITION } from '@/config/pdfFormConfig';
+import { SIGNATURE_POSITION } from '@/config/pdfFormConfig';
 import { formatDate, toAsciiSafe } from './utils';
 
 /**
  * Kaynak PDF'i kullanıcı bilgileriyle doldurur ve imzaları ilgili sayfalara ekler.
- * - Form alanları: Kullanıcı verisi -> PDF alan adı eşlemesi
- * - İmza: Kullanıcı/firma imza alanı karşısı veya sayfa numarasının (1/20) soluna
+ * - AcroForm kullanılmıyor: birçok PDF'de "Expected instance of PDFDict2, but got undefined" hatası
+ *   (bozuk form referansları) oluştuğu için sadece sayfa üzerine metin/imza overlay eklenir.
+ * - İmza: sayfa numarası (1/20) alanının soluna (footer bölgesi).
  */
 export async function fillAndSignSourcePdf(
   request: SigningRequest,
@@ -29,33 +30,7 @@ export async function fillAndSignSourcePdf(
   const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
   const pages = pdfDoc.getPages();
 
-  // 1. Metin form alanlarını doldur (getForm bazı PDF'lerde hata verebilir)
-  let form;
-  try {
-    form = pdfDoc.getForm();
-    const fieldValues: Record<string, string> = {
-      adSoyad: request.adSoyad || '',
-      email: request.email || '',
-      tcKimlik: request.tcKimlik || '',
-      cepNumarasi: request.cepNumarasi || '',
-      adres: '',
-    };
-
-    for (const [userKey, pdfFieldName] of Object.entries(PDF_FORM_FIELD_MAP)) {
-      const value = fieldValues[userKey];
-      if (!value) continue;
-      try {
-        const tf = form.getTextField(pdfFieldName);
-        tf.setText(value);
-      } catch {
-        /* alan yoksa veya tip farklıysa geç */
-      }
-    }
-  } catch {
-    /* Form yok veya XFA/AcroForm uyumsuzluğu - devam et */
-  }
-
-  // 1b. İlk sayfaya kullanıcı bilgisi + tarih + IP blokunu ekle (kanıt için)
+  // 1. İlk sayfaya kullanıcı bilgisi + tarih + IP blokunu ekle (kanıt için)
   if (pages.length > 0) {
     try {
       const firstPage = pages[0];
@@ -124,7 +99,38 @@ export async function fillAndSignSourcePdf(
     }
   }
 
-  const bytes = await pdfDoc.save();
+  // 4. İkametgah / Adli Sicil PDF'lerini sona ekle (fotoğraf olanlar özet PDF'de kalır)
+  for (const docCode of request.selectedDocs) {
+    const docDef = getDocumentByCode(docCode);
+    const sig = request.signatures[docCode];
+    if (!docDef || (docDef.type !== 'residence' && docDef.type !== 'criminal_record') || !sig?.uploadedDocument) continue;
+    if (!sig.uploadedDocument.startsWith('data:application/pdf')) continue;
+
+    try {
+      const b64 = sig.uploadedDocument.replace(/^data:application\/pdf;base64,/, '');
+      const tpBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const tpPdf = await PDFDocument.load(tpBytes, { ignoreEncryption: true });
+      const copied = await pdfDoc.copyPages(tpPdf, tpPdf.getPageIndices());
+      copied.forEach((p) => pdfDoc.addPage(p));
+    } catch {
+      /* eklenemezse geç */
+    }
+  }
+
+  let bytes: Uint8Array;
+  try {
+    bytes = await pdfDoc.save();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/PDFDict|undefined|Expected instance/.test(msg)) {
+      throw new Error(
+        'Kaynak PDF\'te form yapısı (AcroForm) bozuk veya uyumsuz. ' +
+        'Lütfen PDF\'i başka bir araçla kaydedip tekrar deneyin veya form alanları olmayan bir PDF kullanın.'
+      );
+    }
+    throw err;
+  }
+
   const safeName = (request.adSoyad || 'Kullanici').replace(/[^\p{L}\s]/gu, '').trim() || 'Kullanici';
   const safeTc = (request.tcKimlik || '').replace(/\D/g, '') || '';
   const fileName = `${safeName} ${safeTc}.pdf`.replace(/\s+/g, ' ').trim();

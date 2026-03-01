@@ -20,7 +20,7 @@ function getTimestamp(): string {
 
 // Debug helper
 function debugLog(label: string, data: unknown) {
-  console.log(`[E-IMZA DEBUG] ${label}:`, data);
+  console.log(`[Pakethane Panel] ${label}:`, data);
 }
 
 // LocalStorage Repository - Source of Truth
@@ -44,7 +44,7 @@ class LocalStorageRepository {
 
       return parsed;
     } catch (error) {
-      console.error('[E-IMZA ERROR] Failed to read from localStorage:', error);
+      console.error('[Pakethane] Failed to read from localStorage:', error);
       return {};
     }
   }
@@ -56,7 +56,7 @@ class LocalStorageRepository {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
       debugLog('Save successful', null);
     } catch (error) {
-      console.error('[E-IMZA ERROR] Failed to save to localStorage:', error);
+      console.error('[Pakethane] Failed to save to localStorage:', error);
     }
   }
 
@@ -115,7 +115,7 @@ class LocalStorageRepository {
     const request = storage[input.token];
 
     if (!request) {
-      console.error('[E-IMZA ERROR] Request not found for signing:', input.token);
+      console.error('[Pakethane] Request not found for signing:', input.token);
       return null;
     }
 
@@ -126,6 +126,7 @@ class LocalStorageRepository {
       frontImage: input.frontImage,
       backImage: input.backImage,
       taxPlatePdf: input.taxPlatePdf,
+      uploadedDocument: input.uploadedDocument,
       consentChecked: input.consentChecked,
       formData: input.formData,
     };
@@ -165,10 +166,10 @@ class LocalStorageRepository {
     return requests;
   }
 
-  // Update user info (adSoyad, email, cepNumarasi, tcKimlik, userSignaturePng, savedAt, ipAddress)
+  // Update user info (adSoyad, email, cepNumarasi, tcKimlik, adres, surucuBelgesiTarihi, surucuSicilNo, userSignaturePng, savedAt, ipAddress)
   async updateRequestUserInfo(
     token: string,
-    info: Partial<Pick<SigningRequest, 'adSoyad' | 'email' | 'cepNumarasi' | 'tcKimlik' | 'userSignaturePng' | 'savedAt' | 'ipAddress'>>
+    info: Partial<Pick<SigningRequest, 'adSoyad' | 'email' | 'cepNumarasi' | 'tcKimlik' | 'adres' | 'surucuBelgesiTarihi' | 'surucuSicilNo' | 'userSignaturePng' | 'savedAt' | 'ipAddress'>>
   ): Promise<SigningRequest | null> {
     const storage = this.getAll();
     const request = storage[token];
@@ -178,6 +179,9 @@ class LocalStorageRepository {
     if (info.email !== undefined) request.email = info.email;
     if (info.cepNumarasi !== undefined) request.cepNumarasi = info.cepNumarasi;
     if (info.tcKimlik !== undefined) request.tcKimlik = info.tcKimlik;
+    if (info.adres !== undefined) request.adres = info.adres;
+    if (info.surucuBelgesiTarihi !== undefined) request.surucuBelgesiTarihi = info.surucuBelgesiTarihi;
+    if (info.surucuSicilNo !== undefined) request.surucuSicilNo = info.surucuSicilNo;
     if (info.userSignaturePng !== undefined) request.userSignaturePng = info.userSignaturePng;
     if (info.savedAt !== undefined) request.savedAt = info.savedAt;
     if (info.ipAddress !== undefined) request.ipAddress = info.ipAddress;
@@ -238,7 +242,7 @@ export function getStatusColor(status: SigningRequest['status']): string {
 
 // Debug helper for external use
 export function debugStorage(): void {
-  console.log('=== E-IMZA STORAGE DEBUG ===');
+  console.log('=== Pakethane Panel Storage DEBUG ===');
   console.log('STORAGE_KEY:', STORAGE_KEY);
 
   try {

@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Save,
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { mockStore, STORAGE_KEY, debugStorage } from '@/lib/store/mockStore';
 import { getDocumentsByCodes } from '@/config/documentPack';
 import type { SigningRequest } from '@/types';
@@ -35,7 +36,11 @@ export default function UserPanelPage() {
   const [email, setEmail] = useState('');
   const [cepNumarasi, setCepNumarasi] = useState('');
   const [tcKimlik, setTcKimlik] = useState('');
+  const [adres, setAdres] = useState('');
+  const [surucuBelgesiTarihi, setSurucuBelgesiTarihi] = useState('');
+  const [surucuSicilNo, setSurucuSicilNo] = useState('');
   const [userSignature, setUserSignature] = useState<string | null>(null);
+  const [kvkkConsent, setKvkkConsent] = useState(false);
   const [isSavingUserInfo, setIsSavingUserInfo] = useState(false);
 
   useEffect(() => {
@@ -96,6 +101,9 @@ export default function UserPanelPage() {
         setEmail(data.email || '');
         setCepNumarasi(data.cepNumarasi || '');
         setTcKimlik(data.tcKimlik || '');
+        setAdres(data.adres || '');
+        setSurucuBelgesiTarihi(data.surucuBelgesiTarihi || '');
+        setSurucuSicilNo(data.surucuSicilNo || '');
         setUserSignature(data.userSignaturePng || null);
       }
     } catch (err) {
@@ -123,6 +131,9 @@ export default function UserPanelPage() {
         email: email || undefined,
         cepNumarasi: cepNumarasi || undefined,
         tcKimlik: tcKimlik || undefined,
+        adres: adres || undefined,
+        surucuBelgesiTarihi: surucuBelgesiTarihi || undefined,
+        surucuSicilNo: surucuSicilNo || undefined,
         userSignaturePng: userSignature || undefined,
         savedAt,
         ipAddress: ip ?? undefined,
@@ -225,7 +236,7 @@ export default function UserPanelPage() {
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Logo" className="h-24 sm:h-28 w-auto mx-auto mb-4 object-contain" />
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-28 sm:h-32 w-auto mx-auto mb-4 object-contain" />
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             İmza Süreci
           </h1>
@@ -282,13 +293,57 @@ export default function UserPanelPage() {
                   onChange={(e) => setTcKimlik(e.target.value)}
                 />
               </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="adres">Adres</Label>
+                <Input
+                  id="adres"
+                  placeholder="Adresiniz"
+                  value={adres}
+                  onChange={(e) => setAdres(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="surucuBelgesiTarihi">Sürücü Belgesi Veriliş Tarihi (Opsiyonel)</Label>
+                <Input
+                  id="surucuBelgesiTarihi"
+                  placeholder="gg.aa.yyyy"
+                  value={surucuBelgesiTarihi}
+                  onChange={(e) => setSurucuBelgesiTarihi(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="surucuSicilNo">Sürücü Sicil Numarası (Opsiyonel)</Label>
+                <Input
+                  id="surucuSicilNo"
+                  placeholder="Sürücü sicil no"
+                  value={surucuSicilNo}
+                  onChange={(e) => setSurucuSicilNo(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Dijital İmza</Label>
               <SignatureCanvas
                 onChange={setUserSignature}
+                initialDataUrl={userSignature}
                 className="w-full"
               />
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50/80 p-4 space-y-3">
+              <p className="text-sm font-medium text-gray-900">KVKK Aydınlatması</p>
+              <p className="text-xs text-gray-600">
+                İmza süreci kapsamında toplanan adınız, soyadınız, e-posta, cep telefonu, TC kimlik numarası, adres, sürücü belgesi bilgileri, dijital imza ve belge yüklemeleri gibi kişisel verileriniz, hizmet sözleşmesi ve yasal yükümlülüklerin yerine getirilmesi amacıyla işlenecektir. Verileriniz KVKK kapsamında saklanacak ve yalnızca bu amaçlarla kullanılacaktır.
+              </p>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={kvkkConsent}
+                  onCheckedChange={(checked) => setKvkkConsent(checked === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm text-gray-700">
+                  Toplanan kişisel verilerimin yukarıda belirtilen amaçlarla işlenmesini kabul ediyorum.
+                </span>
+              </label>
             </div>
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-gray-500">
@@ -296,7 +351,7 @@ export default function UserPanelPage() {
               </p>
               <Button
                 onClick={handleSaveUserInfo}
-                disabled={isSavingUserInfo}
+                disabled={isSavingUserInfo || !kvkkConsent}
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />
@@ -442,7 +497,7 @@ export default function UserPanelPage() {
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-500">
-          <p>Sorularınız için lütfen admin ile iletişime geçin.</p>
+          <p>Sorularınız için lütfen Bölge Şefiniz ile iletişime geçin.</p>
         </div>
       </div>
     </div>

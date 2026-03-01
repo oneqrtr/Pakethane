@@ -4,6 +4,8 @@ import { Eraser } from 'lucide-react';
 
 interface SignatureCanvasProps {
   onChange?: (signatureData: string | null) => void;
+  /** Mevcut imza (örn. panelde daha önce kaydedilmiş); canvas yüklendiğinde gösterilir */
+  initialDataUrl?: string | null;
   width?: number;
   height?: number;
   className?: string;
@@ -11,6 +13,7 @@ interface SignatureCanvasProps {
 
 export function SignatureCanvas({
   onChange,
+  initialDataUrl,
   width: propWidth,
   height: propHeight,
   className = '',
@@ -19,7 +22,7 @@ export function SignatureCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: propWidth ?? 400, height: propHeight ?? 150 });
   const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
+  const [hasSignature, setHasSignature] = useState(!!initialDataUrl);
 
   useEffect(() => {
     if (propWidth && propHeight) {
@@ -135,6 +138,20 @@ export function SignatureCanvas({
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
   }, [getCanvasContext]);
+
+  // Kaydedilmiş imzayı canvas'a çiz (panel tekrar açıldığında)
+  useEffect(() => {
+    if (!initialDataUrl || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = initialDataUrl;
+  }, [initialDataUrl, dimensions.width, dimensions.height]);
 
   return (
     <div ref={containerRef} className={`flex flex-col gap-3 w-full ${className}`}>

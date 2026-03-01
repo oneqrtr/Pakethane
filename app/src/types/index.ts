@@ -1,6 +1,56 @@
-// Types for the E-İmza Yönetim Sistemi
+// Types for Pakethane Kurye Lojistik + İmza Süreci
 
-export type DocumentType = 'contract' | 'identity_card' | 'driver_license' | 'tax_plate';
+// --- Başvurular (Kurye ol / Kurye Hizmeti Al) ---
+export type KuryeOlStatus = 'pending' | 'approved' | 'rejected';
+
+export interface KuryeOlApplication {
+  id: string;
+  adSoyad: string;
+  email: string;
+  telefon: string;
+  mesaj?: string;
+  status: KuryeOlStatus;
+  createdAt: string;
+  updatedAt: string;
+  /** Onaylandıktan sonra imza için oluşturulan token (SigningRequest) */
+  signingRequestToken?: string;
+}
+
+export interface HizmetAlApplication {
+  id: string;
+  firmaAdi: string;
+  yetkili: string;
+  email: string;
+  telefon: string;
+  talep: string;
+  createdAt: string;
+}
+
+// --- Referanslar (landing carousel logolar) ---
+export interface Reference {
+  id: string;
+  title: string;
+  logoUrl: string;
+  link?: string;
+  order: number;
+}
+
+// --- Blog (landing blog bölümü) ---
+export interface BlogPost {
+  id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  imageUrl: string;
+  createdAt: string;
+  order: number;
+}
+
+// --- İmza süreci (mevcut) ---
+export type DocumentType = 'contract' | 'identity_card' | 'driver_license' | 'tax_plate' | 'residence' | 'criminal_record';
+
+/** HTML belgelerde imzanın konacağı div'in id'si; değiştirmeyin. */
+export const SIGNATURE_PLACEHOLDER_ID = 'signature-placeholder';
 
 export interface DocumentDefinition {
   code: string;
@@ -10,6 +60,8 @@ export interface DocumentDefinition {
   endPage?: number;
   order: number;
   type: DocumentType;
+  /** Varsa bu belge HTML olarak gösterilir; imza placeholder'a yerleştirilir. */
+  contentHtml?: string;
 }
 
 export interface DocumentSignature {
@@ -19,10 +71,14 @@ export interface DocumentSignature {
   frontImage?: string;   // For identity/license
   backImage?: string;    // For identity/license
   taxPlatePdf?: string;  // For tax plate
+  /** İkametgah / Adli Sicil: fotoğraf veya PDF (data URL) */
+  uploadedDocument?: string;
   consentChecked?: boolean;
   formData?: {
     adSoyad?: string;
     tcKimlik?: string;
+    /** KKD Teslim Tutanağı: teslim alındı işaretlenen satır numaraları (1-10) */
+    kkdRows?: number[];
   };
 }
 
@@ -32,6 +88,11 @@ export interface SigningRequest {
   adSoyad?: string;
   cepNumarasi?: string;
   tcKimlik?: string;
+  adres?: string;
+  /** EK-3 B Tipi Taşıt: Sürücü belgesi veriliş tarihi */
+  surucuBelgesiTarihi?: string;
+  /** EK-3 B Tipi Taşıt: Sürücü sicil numarası */
+  surucuSicilNo?: string;
   userSignaturePng?: string;
   selectedDocs: string[];
   signatures: Record<string, DocumentSignature>;
@@ -57,9 +118,11 @@ export interface SignDocumentInput {
   frontImage?: string;
   backImage?: string;
   taxPlatePdf?: string;
+  uploadedDocument?: string;
   consentChecked?: boolean;
   formData?: {
     adSoyad?: string;
     tcKimlik?: string;
+    kkdRows?: number[];
   };
 }

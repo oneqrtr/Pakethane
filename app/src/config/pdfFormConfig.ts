@@ -3,12 +3,14 @@
  * Admin panelde "PDF Form Alanlarını Kontrol Et" ile gerçek alan isimlerini görüp
  * buraya yazın. Örnek: KVKK'da "Adı Soyadı/Unvanı" alanı "firma_adi" olabilir.
  */
+/** PDF'teki doldurulabilir alan adları: full_name, identity_number, adress, email, date */
 export const PDF_FORM_FIELD_MAP: Record<string, string> = {
-  adSoyad: 'firma_adi',
+  adSoyad: 'full_name',
   email: 'email',
-  tcKimlik: 'vergi_vkn',
+  tcKimlik: 'identity_number',
   cepNumarasi: 'cep',
-  adres: 'adres',
+  adres: 'adress',
+  date: 'date',
 };
 
 /**

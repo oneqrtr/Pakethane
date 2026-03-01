@@ -34,8 +34,16 @@ import {
   Menu,
   X,
   Download,
+  Truck,
+  Package,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  Plus,
+  Pencil,
+  BookOpen,
 } from 'lucide-react';
-import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH } from '@/config/documentPack';
+import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH, KKD_TESLIM_TUTANAGI_CODE } from '@/config/documentPack';
 import {
   mockStore,
   getUserPanelUrl,
@@ -43,12 +51,16 @@ import {
   getStatusColor,
   debugStorage,
 } from '@/lib/store/mockStore';
-import type { DocumentDefinition, SigningRequest } from '@/types';
+import { kuryeOlStore, hizmetAlStore } from '@/lib/store/applicationsStore';
+import { referencesStore } from '@/lib/store/referencesStore';
+import { blogStore } from '@/lib/store/blogStore';
+import type { DocumentDefinition, SigningRequest, KuryeOlApplication, HizmetAlApplication, Reference, BlogPost } from '@/types';
+import { ImageUploadField } from '@/components/admin/ImageUploadField';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { isValidEmail, formatDate, cn } from '@/lib/utils';
 import { generateFinalPdf } from '@/lib/generateFinalPdf';
-import { fillAndSignSourcePdf } from '@/lib/fillAndSignSourcePdf';
 import { inspectPdfFormFields } from '@/lib/inspectPdfFormFields';
+import { downloadSignedHtmlDocsAsPdf, hasSignedHtmlDocs } from '@/lib/htmlContractPdf';
 
 const ADMIN_PASSWORD = 'Phane!';
 const ADMIN_AUTH_KEY = 'admin_authenticated';
@@ -74,7 +86,7 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<SigningRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'documents' | 'send' | 'signed'>('documents');
+  const [activeSection, setActiveSection] = useState<'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog'>('kurye-ol');
   const [signedFilter, setSignedFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isFillingSourcePdf, setIsFillingSourcePdf] = useState(false);
@@ -86,11 +98,31 @@ export default function AdminPage() {
   } | null>(null);
   const [isInspectingPdf, setIsInspectingPdf] = useState(false);
 
+  // Kurye ol / Hizmet al / Referanslar
+  const [kuryeOlList, setKuryeOlList] = useState<KuryeOlApplication[]>([]);
+  const [hizmetAlList, setHizmetAlList] = useState<HizmetAlApplication[]>([]);
+  const [referencesList, setReferencesList] = useState<Reference[]>([]);
+  const [kuryeOlFilter, setKuryeOlFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [sendLinkApp, setSendLinkApp] = useState<KuryeOlApplication | null>(null);
+  const [refForm, setRefForm] = useState<{ id?: string; title: string; logoUrl: string; link: string }>({ title: '', logoUrl: '', link: '' });
+  const [refDialogOpen, setRefDialogOpen] = useState(false);
+  const [blogList, setBlogList] = useState<BlogPost[]>([]);
+  const [blogForm, setBlogForm] = useState<{ id?: string; title: string; excerpt: string; content: string; imageUrl: string }>({ title: '', excerpt: '', content: '', imageUrl: '' });
+  const [blogDialogOpen, setBlogDialogOpen] = useState(false);
+
   useEffect(() => {
     if (isAdmin && isAuthenticated) {
       loadRequests();
+      setKuryeOlList(kuryeOlStore.getAll());
+      setHizmetAlList(hizmetAlStore.getAll());
+      setReferencesList(referencesStore.getAll());
+      setBlogList(blogStore.getAll());
     }
   }, [isAdmin, isAuthenticated]);
+
+  const refreshKuryeOl = () => setKuryeOlList(kuryeOlStore.getAll());
+  const refreshReferences = () => setReferencesList(referencesStore.getAll());
+  const refreshBlog = () => setBlogList(blogStore.getAll());
 
   const loadRequests = async () => {
     setIsLoadingRequests(true);
@@ -212,11 +244,15 @@ export default function AdminPage() {
     if (!viewRequest) return;
     setIsFillingSourcePdf(true);
     try {
-      await fillAndSignSourcePdf(viewRequest);
+      if (!hasSignedHtmlDocs(viewRequest)) {
+        alert('Bu istekte imzalı HTML belge yok. Önce kullanıcının sözleşmeleri imzalaması gerekir.');
+        return;
+      }
+      await downloadSignedHtmlDocsAsPdf(viewRequest);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : String(err);
-      alert(`Kaynak PDF doldurulurken hata: ${msg}`);
+      alert(`PDF oluşturulurken hata: ${msg}`);
     } finally {
       setIsFillingSourcePdf(false);
     }
@@ -227,13 +263,76 @@ export default function AdminPage() {
     alert('Link kopyalandı!');
   };
 
-  const scrollToSection = (sectionId: 'documents' | 'send' | 'signed') => {
+  // Kurye ol: onayla / reddet
+  const handleKuryeOlStatus = (app: KuryeOlApplication, status: 'approved' | 'rejected') => {
+    kuryeOlStore.setStatus(app.id, status);
+    refreshKuryeOl();
+  };
+
+  // Kurye ol: imza linki gönder (SigningRequest oluştur ve token'ı başvuruya yaz)
+  const [sendLinkSelectedDocs, setSendLinkSelectedDocs] = useState<string[]>([]);
+  const handleSendLinkFromKuryeOl = async () => {
+    if (!sendLinkApp || sendLinkSelectedDocs.length === 0) return;
+    try {
+      const request = await mockStore.createRequest({
+        email: sendLinkApp.email,
+        adSoyad: sendLinkApp.adSoyad,
+        selectedDocs: sendLinkSelectedDocs,
+      });
+      kuryeOlStore.setStatus(sendLinkApp.id, 'approved', request.token);
+      refreshKuryeOl();
+      setGeneratedLink(window.location.origin + window.location.pathname + '#' + getUserPanelUrl(request.token));
+      setSendSuccess(true);
+      setSendLinkApp(null);
+      setSendLinkSelectedDocs([]);
+      loadRequests();
+    } catch {
+      alert('İmza isteği oluşturulurken hata oluştu.');
+    }
+  };
+
+  // Referans ekle / güncelle / sil
+  const handleRefSave = () => {
+    if (!refForm.title.trim() || !refForm.logoUrl.trim()) return;
+    if (refForm.id) {
+      referencesStore.update(refForm.id, { title: refForm.title, logoUrl: refForm.logoUrl, link: refForm.link || undefined });
+    } else {
+      referencesStore.add({ title: refForm.title, logoUrl: refForm.logoUrl, link: refForm.link || undefined });
+    }
+    refreshReferences();
+    setRefForm({ title: '', logoUrl: '', link: '' });
+    setRefDialogOpen(false);
+  };
+  const handleRefDelete = (id: string) => {
+    if (confirm('Bu referansı silmek istediğinize emin misiniz?')) {
+      referencesStore.remove(id);
+      refreshReferences();
+    }
+  };
+
+  const handleBlogSave = () => {
+    if (!blogForm.title.trim() || !blogForm.excerpt.trim() || !blogForm.imageUrl.trim()) return;
+    if (blogForm.id) {
+      blogStore.update(blogForm.id, { title: blogForm.title, excerpt: blogForm.excerpt, content: blogForm.content, imageUrl: blogForm.imageUrl });
+    } else {
+      blogStore.add({ title: blogForm.title, excerpt: blogForm.excerpt, content: blogForm.content, imageUrl: blogForm.imageUrl });
+    }
+    refreshBlog();
+    setBlogForm({ title: '', excerpt: '', content: '', imageUrl: '' });
+    setBlogDialogOpen(false);
+  };
+  const handleBlogDelete = (id: string) => {
+    if (confirm('Bu blog yazısını silmek istediğinize emin misiniz?')) {
+      blogStore.remove(id);
+      refreshBlog();
+    }
+  };
+
+  const scrollToSection = (sectionId: 'kurye-ol' | 'hizmet-al' | 'documents' | 'send' | 'signed' | 'references' | 'blog') => {
     setActiveSection(sectionId);
     setIsSidebarOpen(false);
-    if (sectionId !== 'signed') {
-      const element = document.getElementById(sectionId);
-      if (element) element.scrollIntoView({ behavior: 'smooth' });
-    }
+    const element = document.getElementById(sectionId);
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -255,9 +354,13 @@ export default function AdminPage() {
   };
 
   const menuItems = [
+    { id: 'kurye-ol' as const, label: 'Kurye Ol Başvuruları', icon: Truck },
+    { id: 'hizmet-al' as const, label: 'Hizmet Al Başvuruları', icon: Package },
     { id: 'documents' as const, label: 'Belge Paketi', icon: FileText },
-    { id: 'send' as const, label: 'Kullanıcıya Gönder', icon: Send },
+    { id: 'send' as const, label: 'İmza Linki Gönder', icon: Send },
     { id: 'signed' as const, label: 'İmzalananlar', icon: CheckCircle },
+    { id: 'references' as const, label: 'Referanslar', icon: Star },
+    { id: 'blog' as const, label: 'Blog', icon: BookOpen },
   ];
 
   if (!isAdmin) {
@@ -334,9 +437,9 @@ export default function AdminPage() {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between px-6 py-4 border-b">
             <div className="flex items-center gap-2">
-              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Logo" className="h-16 w-auto object-contain" />
+              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-20 w-auto object-contain" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">E-İmza</h1>
+                <h1 className="text-xl font-bold text-gray-900">Pakethane Lojistik</h1>
                 <p className="text-xs text-gray-500">Admin Paneli</p>
               </div>
             </div>
@@ -400,12 +503,263 @@ export default function AdminPage() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Logo" className="h-16 w-auto object-contain" />
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Pakethane Lojistik" className="h-20 w-auto object-contain" />
           <h1 className="text-lg font-semibold">Admin Paneli</h1>
         </header>
 
         <div className="p-4 lg:p-8 space-y-12 max-w-6xl mx-auto">
-          {activeSection === 'signed' ? (
+          {activeSection === 'kurye-ol' ? (
+            <section id="kurye-ol" className="scroll-mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Kurye Ol Başvuruları
+                  </CardTitle>
+                  <CardDescription>
+                    Pakethane kuryesi olmak isteyen adayların başvuruları. Onaylananlara imza linki gönderebilirsiniz.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
+                      <Button
+                        key={f}
+                        variant={kuryeOlFilter === f ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setKuryeOlFilter(f)}
+                      >
+                        {f === 'all' ? 'Tümü' : f === 'pending' ? 'Bekleyen' : f === 'approved' ? 'Onaylanan' : 'Reddedilen'}
+                      </Button>
+                    ))}
+                  </div>
+                  {kuryeOlList.filter((a) => kuryeOlFilter === 'all' || a.status === kuryeOlFilter).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">Bu filtreye uygun başvuru yok.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ad Soyad</TableHead>
+                            <TableHead>E-posta</TableHead>
+                            <TableHead>Telefon</TableHead>
+                            <TableHead>Durum</TableHead>
+                            <TableHead>Tarih</TableHead>
+                            <TableHead>Aksiyonlar</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {kuryeOlList
+                            .filter((a) => kuryeOlFilter === 'all' || a.status === kuryeOlFilter)
+                            .map((app) => (
+                              <TableRow key={app.id}>
+                                <TableCell>{app.adSoyad}</TableCell>
+                                <TableCell>{app.email}</TableCell>
+                                <TableCell>{app.telefon}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={cn(
+                                      'border',
+                                      app.status === 'pending' && 'bg-yellow-100 text-yellow-800',
+                                      app.status === 'approved' && 'bg-green-100 text-green-800',
+                                      app.status === 'rejected' && 'bg-red-100 text-red-800'
+                                    )}
+                                  >
+                                    {app.status === 'pending' ? 'Bekleyen' : app.status === 'approved' ? 'Onaylandı' : 'Reddedildi'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{formatDate(app.createdAt)}</TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {app.status === 'pending' && (
+                                      <>
+                                        <Button variant="outline" size="sm" className="gap-1" onClick={() => handleKuryeOlStatus(app, 'approved')}>
+                                          <ThumbsUp className="h-3 w-3" /> Onayla
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="gap-1 text-red-600" onClick={() => handleKuryeOlStatus(app, 'rejected')}>
+                                          <ThumbsDown className="h-3 w-3" /> Reddet
+                                        </Button>
+                                      </>
+                                    )}
+                                    {app.status === 'approved' && (
+                                      <Button variant="default" size="sm" className="gap-1" onClick={() => { setSendLinkApp(app); setSendLinkSelectedDocs(DOCUMENT_PACK.filter((d) => d.type === 'contract' || !d.type).map((d) => d.code)); }}>
+                                        <Send className="h-3 w-3" /> İmza linki gönder
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          ) : activeSection === 'hizmet-al' ? (
+            <section id="hizmet-al" className="scroll-mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Kurye Hizmeti Al Başvuruları
+                  </CardTitle>
+                  <CardDescription>
+                    Kurye hizmeti talep eden müşteri başvuruları.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {hizmetAlList.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">Henüz başvuru yok.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Firma</TableHead>
+                            <TableHead>Yetkili</TableHead>
+                            <TableHead>E-posta</TableHead>
+                            <TableHead>Telefon</TableHead>
+                            <TableHead>Talep</TableHead>
+                            <TableHead>Tarih</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {hizmetAlList.map((app) => (
+                            <TableRow key={app.id}>
+                              <TableCell>{app.firmaAdi}</TableCell>
+                              <TableCell>{app.yetkili}</TableCell>
+                              <TableCell>{app.email}</TableCell>
+                              <TableCell>{app.telefon}</TableCell>
+                              <TableCell className="max-w-[200px] truncate" title={app.talep}>{app.talep}</TableCell>
+                              <TableCell>{formatDate(app.createdAt)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          ) : activeSection === 'references' ? (
+            <section id="references" className="scroll-mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Referanslar
+                  </CardTitle>
+                  <CardDescription>
+                    Landing sayfasındaki &quot;Referanslarımız&quot; kayan logoları buradan ekleyip çıkarabilirsiniz. Logo URL girin veya dosya yükleyin.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="mb-4 gap-2" onClick={() => { setRefForm({ title: '', logoUrl: '', link: '' }); setRefDialogOpen(true); }}>
+                    <Plus className="h-4 w-4" /> Referans Ekle
+                  </Button>
+                  {referencesList.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">Henüz referans eklenmedi.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Logo</TableHead>
+                            <TableHead>Başlık</TableHead>
+                            <TableHead>Link</TableHead>
+                            <TableHead>Sıra</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {referencesList.map((ref) => (
+                            <TableRow key={ref.id}>
+                              <TableCell>
+                                <img src={ref.logoUrl} alt={ref.title} className="h-10 w-20 object-contain bg-gray-50 rounded" />
+                              </TableCell>
+                              <TableCell>{ref.title}</TableCell>
+                              <TableCell className="max-w-[180px] truncate text-sm">{ref.link || '-'}</TableCell>
+                              <TableCell>{ref.order}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="icon" onClick={() => { setRefForm({ id: ref.id, title: ref.title, logoUrl: ref.logoUrl, link: ref.link || '' }); setRefDialogOpen(true); }}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleRefDelete(ref.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          ) : activeSection === 'blog' ? (
+            <section id="blog" className="scroll-mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Blog
+                  </CardTitle>
+                  <CardDescription>
+                    Landing sayfasındaki blog bölümünü buradan yönetin. Görsel URL girin veya dosya yükleyin.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="mb-4 gap-2" onClick={() => { setBlogForm({ title: '', excerpt: '', content: '', imageUrl: '' }); setBlogDialogOpen(true); }}>
+                    <Plus className="h-4 w-4" /> Blog Yazısı Ekle
+                  </Button>
+                  {blogList.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">Henüz blog yazısı yok.</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Görsel</TableHead>
+                            <TableHead>Başlık</TableHead>
+                            <TableHead>Özet</TableHead>
+                            <TableHead>Tarih</TableHead>
+                            <TableHead></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {blogList.map((post) => (
+                            <TableRow key={post.id}>
+                              <TableCell>
+                                <img src={post.imageUrl} alt="" className="h-12 w-24 object-cover rounded bg-gray-50" />
+                              </TableCell>
+                              <TableCell className="font-medium max-w-[200px] truncate">{post.title}</TableCell>
+                              <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">{post.excerpt}</TableCell>
+                              <TableCell className="text-sm">{formatDate(post.createdAt)}</TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="icon" onClick={() => { setBlogForm({ id: post.id, title: post.title, excerpt: post.excerpt, content: post.content, imageUrl: post.imageUrl }); setBlogDialogOpen(true); }}>
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleBlogDelete(post.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          ) : activeSection === 'signed' ? (
             /* Section C: İmzalananlar */
             <section id="signed" className="scroll-mt-8">
               <Card>
@@ -572,7 +926,7 @@ export default function AdminPage() {
                       ) : pdfInspectResult.hasForm ? (
                         <>
                           <p className="text-green-700 font-medium mb-2">
-                            ✓ PDF&apos;de {pdfInspectResult.fieldCount} adet form alanı bulundu
+                            PDF'de {pdfInspectResult.fieldCount} adet form alanı bulundu
                           </p>
                           <p className="text-xs text-gray-600 mb-1">Alan isimleri:</p>
                           <ul className="text-xs font-mono text-gray-700 max-h-32 overflow-y-auto space-y-1">
@@ -625,14 +979,18 @@ export default function AdminPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <h4 className="font-medium text-gray-900">{doc.title}</h4>
                             {doc.type === 'contract' || !doc.type ? (
-                              <Badge variant="outline" className="text-xs flex-shrink-0">
-                                Sayfa {doc.startPage}-{doc.endPage}
-                              </Badge>
+                              doc.startPage != null && doc.endPage != null ? (
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  Sayfa {doc.startPage}-{doc.endPage}
+                                </Badge>
+                              ) : null
                             ) : (
                               <Badge variant="secondary" className="text-xs flex-shrink-0">
                                 {doc.type === 'identity_card' ? 'Kimlik' :
-                                  doc.type === 'driver_license' ? 'Ehliyet' :
-                                    doc.type === 'tax_plate' ? 'Vergi Levhası' : 'Belge'}
+                                  doc.type === 'driver_license' ? 'Sürücü Belgesi' :
+                                    doc.type === 'tax_plate' ? 'Vergi Levhası' :
+                                      doc.type === 'residence' ? 'İkametgah' :
+                                        doc.type === 'criminal_record' ? 'Adli Sicil' : 'Belge'}
                               </Badge>
                             )}
                           </div>
@@ -674,7 +1032,7 @@ export default function AdminPage() {
                   Kullanıcıya Gönder
                 </CardTitle>
                 <CardDescription>
-                  Seçili belgeleri imzalamak üzere kullanıcıya gönderin.
+                  Kurye adayına gönderilecek belgeleri seçip imza paneli linki oluşturun.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -735,7 +1093,7 @@ export default function AdminPage() {
                     }
                     className="w-full"
                   >
-                    {isSending ? 'Gönderiliyor...' : 'İmza İsteği Gönder'}
+                    {isSending ? 'Gönderiliyor...' : 'Panel Linki Oluştur'}
                   </Button>
                 </div>
               </CardContent>
@@ -754,8 +1112,15 @@ export default function AdminPage() {
             <DialogDescription>{previewDoc?.description}</DialogDescription>
           </DialogHeader>
           {previewDoc && (
-            <div className="h-[50vh] sm:h-[600px] min-h-[300px] flex items-center justify-center bg-gray-100 rounded-lg">
-              {previewDoc.type === 'contract' || !previewDoc.type ? (
+            <div className="h-[50vh] sm:h-[600px] min-h-[300px] flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+              {previewDoc.contentHtml ? (
+                <iframe
+                  srcDoc={previewDoc.contentHtml}
+                  title={previewDoc.title}
+                  className="w-full h-full min-h-[300px] border-0 rounded-lg bg-white"
+                  sandbox="allow-same-origin"
+                />
+              ) : previewDoc.type === 'contract' || !previewDoc.type ? (
                 <PDFViewer document={previewDoc} className="w-full h-full" />
               ) : (
                 <div className="text-center p-8 flex flex-col items-center justify-center h-full">
@@ -767,7 +1132,9 @@ export default function AdminPage() {
                   </h3>
                   <p className="text-gray-500 max-w-sm mx-auto">
                     {previewDoc.type === 'tax_plate'
-                      ? 'Bu belge için kullanıcıdan PDF dosyası yüklemesi istenecek.'
+                      ? 'Bu belge için kullanıcıdan PDF veya fotoğraf yüklemesi istenecek.'
+                      : previewDoc.type === 'residence' || previewDoc.type === 'criminal_record'
+                      ? 'Bu belge için kullanıcıdan fotoğraf veya PDF yüklemesi istenecek.'
                       : 'Bu belge için kullanıcıdan ön ve arka yüz fotoğrafı yüklemesi istenecek.'}
                   </p>
                 </div>
@@ -808,6 +1175,18 @@ export default function AdminPage() {
                     <Label className="text-gray-500">TC Kimlik</Label>
                     <p className="font-medium">{viewRequest.tcKimlik || '-'}</p>
                   </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-gray-500">Adres</Label>
+                    <p className="font-medium">{viewRequest.adres || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Sürücü Belgesi Tarihi</Label>
+                    <p className="font-medium">{viewRequest.surucuBelgesiTarihi || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Sürücü Sicil No</Label>
+                    <p className="font-medium">{viewRequest.surucuSicilNo || '-'}</p>
+                  </div>
                   <div>
                     <Label className="text-gray-500">İstek Tarihi</Label>
                     <p className="font-medium">{formatDate(viewRequest.createdAt)}</p>
@@ -831,38 +1210,38 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <Label className="text-gray-500 mb-2 block">İmzalanan Belgeler</Label>
-                <div className="space-y-2">
+              <Label className="text-gray-500 mb-2 block">İmzalanan Belgeler</Label>
+              <div className="space-y-2">
                   {viewRequest.selectedDocs.map((docCode) => {
                     const doc = getDocumentByCode(docCode);
                     const signature = viewRequest.signatures[docCode];
                     return (
                       <div
                         key={docCode}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                        className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg"
                       >
-                        <div className="flex items-center gap-2">
-                          {signature ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4 text-yellow-500" />
-                          )}
-                          <span className="text-sm">{doc?.title}</span>
-                        </div>
-                        {signature && (
-                          <div className="flex flex-col gap-2">
-                            <span className="text-xs text-gray-500 text-right">
-                              {formatDate(signature.signedAt)}
-                            </span>
-                            {doc?.type === 'contract' && signature.signaturePng && (
-                              <img
-                                src={signature.signaturePng}
-                                alt="İmza"
-                                className="h-8 w-auto border rounded self-end"
-                              />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {signature ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <AlertCircle className="h-4 w-4 text-yellow-500" />
                             )}
-                            {(doc?.type === 'identity_card' || doc?.type === 'driver_license') && (
+                            <span className="text-sm">{doc?.title}</span>
+                          </div>
+                          {signature && (
+                            <div className="flex flex-col gap-2">
+                              <span className="text-xs text-gray-500 text-right">
+                                {formatDate(signature.signedAt)}
+                              </span>
+                              {doc?.type === 'contract' && signature.signaturePng && (
+                                <img
+                                  src={signature.signaturePng}
+                                  alt="İmza"
+                                  className="h-8 w-auto border rounded self-end"
+                                />
+                              )}
+                              {(doc?.type === 'identity_card' || doc?.type === 'driver_license') && (
                               <div className="flex gap-2 justify-end">
                                 {signature.frontImage && (
                                   <a
@@ -893,8 +1272,8 @@ export default function AdminPage() {
                                   </a>
                                 )}
                               </div>
-                            )}
-                            {doc?.type === 'tax_plate' && signature.taxPlatePdf && (
+                              )}
+                              {doc?.type === 'tax_plate' && signature.taxPlatePdf && (
                               <div className="flex justify-end">
                                 <a
                                   href={signature.taxPlatePdf}
@@ -905,13 +1284,60 @@ export default function AdminPage() {
                                   PDF İndir
                                 </a>
                               </div>
-                            )}
-                          </div>
-                        )}
+                              )}
+                              {(doc?.type === 'residence' || doc?.type === 'criminal_record') && signature.uploadedDocument && (
+                              <div className="flex flex-col gap-1 justify-end">
+                                {signature.uploadedDocument.startsWith('data:image/') ? (
+                                  <a
+                                    href={signature.uploadedDocument}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block max-w-[120px] border rounded overflow-hidden"
+                                  >
+                                    <img
+                                      src={signature.uploadedDocument}
+                                      alt="Yüklenen belge"
+                                      className="w-full h-auto object-contain"
+                                    />
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={signature.uploadedDocument}
+                                    download={doc?.type === 'residence' ? 'ikametgah.pdf' : 'adli_sicil.pdf'}
+                                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                    PDF İndir
+                                  </a>
+                                )}
+                              </div>
+                              )}
+                              {docCode === KKD_TESLIM_TUTANAGI_CODE && signature.formData?.kkdRows?.length ? (
+                              <div className="text-xs text-amber-800 bg-amber-50 rounded px-2 py-1 mt-1">
+                                <span className="font-medium">KKD teslim alınanlar:</span>{' '}
+                                {[
+                                  [1, 'Kask'],
+                                  [2, 'Römork/Çanta/Kutu'],
+                                  [3, 'Polar/Hırka'],
+                                  [4, 'T-Shirt'],
+                                  [5, 'Korumalı Mont'],
+                                  [6, 'Yağmurluk'],
+                                  [7, 'Korumalı Pantolon'],
+                                  [8, 'Diğer 8'],
+                                  [9, 'Diğer 9'],
+                                  [10, 'Diğer 10'],
+                                ]
+                                  .filter(([n]) => signature.formData!.kkdRows!.includes(n as number))
+                                  .map(([, label]) => label)
+                                  .join(', ')}
+                              </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
-                </div>
               </div>
 
               <div className="pt-4 border-t space-y-4">
@@ -925,7 +1351,7 @@ export default function AdminPage() {
                       className="gap-2"
                     >
                       <Download className="h-4 w-4" />
-                      {isFillingSourcePdf ? 'Hazırlanıyor...' : 'Kaynak PDF (Doldurulmuş + İmzalı)'}
+                      {isFillingSourcePdf ? 'Hazırlanıyor...' : 'İmzalı Belgeleri PDF İndir'}
                     </Button>
                     <Button
                       onClick={handleDownloadFinalPdf}
@@ -934,11 +1360,11 @@ export default function AdminPage() {
                       className="gap-2"
                     >
                       <Download className="h-4 w-4" />
-                      {isGeneratingPdf ? 'Oluşturuluyor...' : 'Özet PDF'}
+                      {isGeneratingPdf ? 'Oluşturuluyor...' : 'Özet PDF (Canlı İmza İçin)'}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    <strong>Kaynak PDF:</strong> Sözleşme PDF&apos;i form alanları + imzalar (kullanıcı/firma alanı karşısı, sayfa no soluna). <strong>Özet PDF:</strong> Tüm bilgiler tek dosyada.
+                    <strong>İmzalı Belgeleri PDF:</strong> İmzalanmış tüm sözleşmeler dolu ve imzalı hâliyle tek PDF olarak indirilir (tarayıcıda oluşturulur, sunucu gerekmez). <strong>Özet PDF:</strong> Tek sayfa; canlı imza için kullanıcı bilgileri ve sözleşme isimleri + imzalar.
                   </p>
                 </div>
 
@@ -976,17 +1402,155 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Kurye ol: İmza linki gönder dialog */}
+      <Dialog open={!!sendLinkApp} onOpenChange={(open) => !open && setSendLinkApp(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>İmza Linki Gönder</DialogTitle>
+            <DialogDescription>
+              {sendLinkApp && (
+                <span>
+                  {sendLinkApp.adSoyad} ({sendLinkApp.email}) için imza isteği oluşturup linki kopyalayın.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {sendLinkApp && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                İmzalanacak belgeleri seçin, ardından &quot;Link Oluştur&quot; ile panel linki oluşturulur.
+              </p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {DOCUMENT_PACK.filter((d) => d.type === 'contract' || !d.type).map((doc) => (
+                  <label key={doc.code} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={sendLinkSelectedDocs.includes(doc.code)}
+                      onCheckedChange={(c) =>
+                        setSendLinkSelectedDocs((prev) =>
+                          c ? [...prev, doc.code] : prev.filter((x) => x !== doc.code)
+                        )
+                      }
+                    />
+                    <span className="text-sm">{doc.title}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSendLinkFromKuryeOl} disabled={sendLinkSelectedDocs.length === 0}>
+                  Link Oluştur ve Kopyala
+                </Button>
+                <Button variant="outline" onClick={() => setSendLinkApp(null)}>İptal</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Referans ekle / düzenle dialog */}
+      <Dialog open={refDialogOpen} onOpenChange={setRefDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{refForm.id ? 'Referans Düzenle' : 'Referans Ekle'}</DialogTitle>
+            <DialogDescription>Landing sayfasındaki kayan logolar listesine eklenecek.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Başlık</Label>
+              <Input
+                value={refForm.title}
+                onChange={(e) => setRefForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="Firma / referans adı"
+              />
+            </div>
+            <div className="space-y-2">
+              <ImageUploadField
+                label="Logo / Görsel (URL veya dosya yükleyin)"
+                value={refForm.logoUrl}
+                onChange={(url) => setRefForm((f) => ({ ...f, logoUrl: url }))}
+                placeholder="https://... veya dosya seçin"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Link (opsiyonel)</Label>
+              <Input
+                value={refForm.link}
+                onChange={(e) => setRefForm((f) => ({ ...f, link: e.target.value }))}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleRefSave} disabled={!refForm.title.trim() || !refForm.logoUrl.trim()}>
+                Kaydet
+              </Button>
+              <Button variant="outline" onClick={() => { setRefDialogOpen(false); setRefForm({ title: '', logoUrl: '', link: '' }); }}>
+                İptal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Blog Ekle / Düzenle dialog */}
+      <Dialog open={blogDialogOpen} onOpenChange={setBlogDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{blogForm.id ? 'Blog Yazısını Düzenle' : 'Blog Yazısı Ekle'}</DialogTitle>
+            <DialogDescription>Landing blog bölümünde görünecek.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Başlık</Label>
+              <Input
+                value={blogForm.title}
+                onChange={(e) => setBlogForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder="Yazı başlığı"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Kısa özet</Label>
+              <Input
+                value={blogForm.excerpt}
+                onChange={(e) => setBlogForm((f) => ({ ...f, excerpt: e.target.value }))}
+                placeholder="Listede görünecek kısa özet"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>İçerik</Label>
+              <textarea
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={blogForm.content}
+                onChange={(e) => setBlogForm((f) => ({ ...f, content: e.target.value }))}
+                placeholder="Yazı içeriği (isteğe bağlı)"
+              />
+            </div>
+            <ImageUploadField
+              label="Kapak görseli (URL veya dosya yükleyin)"
+              value={blogForm.imageUrl}
+              onChange={(url) => setBlogForm((f) => ({ ...f, imageUrl: url }))}
+              placeholder="https://... veya dosya seçin"
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleBlogSave} disabled={!blogForm.title.trim() || !blogForm.excerpt.trim() || !blogForm.imageUrl.trim()}>
+                Kaydet
+              </Button>
+              <Button variant="outline" onClick={() => { setBlogDialogOpen(false); setBlogForm({ title: '', excerpt: '', content: '', imageUrl: '' }); }}>
+                İptal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Success Modal */}
       <Dialog open={sendSuccess} onOpenChange={setSendSuccess}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-green-600">
               <CheckCircle className="h-5 w-5" />
-              İmza İsteği Gönderildi
+              Panel Linki Oluşturuldu
             </DialogTitle>
             <DialogDescription>
-              İmza isteği başarıyla oluşturuldu. Kullanıcıya aşağıdaki linki
-              gönderebilirsiniz.
+              Kurye adayı için imza/panel linki hazır. Aşağıdaki linki kopyalayıp kullanıcıya gönderebilirsiniz.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

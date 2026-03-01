@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    .belge-html { font-family: system-ui, 'Segoe UI', sans-serif; font-size: 11px; line-height: 1.45; color: #222; max-width: 210mm; margin: 0 auto; padding: 12px; }
+    .belge-html h1 { font-size: 14px; margin: 0 0 10px 0; text-align: center; }
+    .belge-html p { margin: 0 0 8px 0; text-align: justify; }
+    .belge-html table.kkd { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10px; }
+    .belge-html table.kkd th, .belge-html table.kkd td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: middle; text-align: center; }
+    .belge-html table.kkd th { background: #f5f5f5; font-weight: 600; }
+    .belge-html table.kkd td.left { text-align: left; }
+    .belge-html .alan { text-decoration: underline; min-height: 1em; }
+    .belge-html .check { font-size: 14px; font-weight: bold; color: #0d9488; }
+    .signature-box { min-height: 56px; margin-top: 8px; border: 1px dashed #999; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .signature-box img { max-width: 180px; max-height: 70px; object-fit: contain; }
+    .imza-bolumu { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <article class="belge-html">
+    <h1>KİŞİSEL KORUYUCU MALZEME TESLİM TUTANAĞI</h1>
+
+    <p>Pakethane Lojistik ve Teknoloji Hizmetleri Sanayi Ltd. Şti. ünvanlı iş yerinde İşçi Sağlığı ve İş Güvenliği Tüzüğü ve Kişisel Koruyucu Donanımların İş Yerlerinde Kullanılması Hakkında Yönetmelik gereği, kullanılmak üzere tarafıma teslim edilen Kişisel Koruyucu Donanımları (KKD) sağlam durumda teslim aldım. Bu KKD'ların ne zaman ve nasıl kullanılacağı, kullanmadığım taktirde karşılaşacağım tehlikeler konusunda bilgilendirildim.</p>
+    <p>İşimle ilgili verilen bu Kişisel Koruyucu Donanımların bakımını yaparak koruyacağıma, bunları kullanmadığım taktirde bana ihtar verileceği, 2. ihtarda ise görevime son verileceğini, malzemelerin kaybolması ya da eskimesi durumunda da derhal en yakın amirime veya yenisinin almak üzere yetkiliye başvuracağımı kabul ve taahhüt ederim.</p>
+
+    <p><strong>Çalışanın:</strong></p>
+    <p><strong>Adı Soyadı</strong>: <span class="alan">{{adSoyad}}</span></p>
+    <p><strong>Çalıştığı Bölüm</strong>: Operasyon &nbsp;&nbsp; <strong>Görevi</strong>: Kurye</p>
+
+    <table class="kkd">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Malzemenin Cinsi</th>
+          <th>Miktarı</th>
+          <th>Tarih</th>
+          <th>Teslim Eden</th>
+          <th>Teslim Aldım</th>
+          <th>Teslim Alan</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td class="left">Kask (Kendimin)</td>
+          <td></td>
+          <td>{{kkdRow1Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow1}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td class="left">Römork / Çanta / Kutu</td>
+          <td></td>
+          <td>{{kkdRow2Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow2}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td class="left">Polar / Hırka</td>
+          <td></td>
+          <td>{{kkdRow3Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow3}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td class="left">T-Shirt</td>
+          <td></td>
+          <td>{{kkdRow4Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow4}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td class="left">Korumalı Mont</td>
+          <td></td>
+          <td>{{kkdRow5Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow5}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td class="left">Yağmurluk</td>
+          <td></td>
+          <td>{{kkdRow6Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow6}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td class="left">Korumalı Pantolon</td>
+          <td></td>
+          <td>{{kkdRow7Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow7}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td class="left"></td>
+          <td></td>
+          <td>{{kkdRow8Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow8}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td class="left"></td>
+          <td></td>
+          <td>{{kkdRow9Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow9}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td class="left"></td>
+          <td></td>
+          <td>{{kkdRow10Tarih}}</td>
+          <td></td>
+          <td class="check">{{kkdRow10}}</td>
+          <td>{{adSoyad}}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top: 12px;">İŞ GÜVENLİĞİ UZMANI :</p>
+    <p>İŞVEREN / VEKİLİ :</p>
+
+    <div class="imza-bolumu">
+      <p><strong>İmza (Teslim Alan)</strong></p>
+      <p><span class="alan">{{adSoyad}}</span></p>
+      <div id="signature-placeholder" class="signature-box"></div>
+    </div>
+  </article>
+</body>
+</html>
