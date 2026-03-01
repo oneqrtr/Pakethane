@@ -44,7 +44,7 @@ import {
   BookOpen,
   ScrollText,
 } from 'lucide-react';
-import { DOCUMENT_PACK, getDocumentByCode, SOURCE_PDF_PATH, KKD_TESLIM_TUTANAGI_CODE, FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE } from '@/config/documentPack';
+import { DOCUMENT_PACK, getDocumentByCode, KKD_TESLIM_TUTANAGI_CODE, FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE } from '@/config/documentPack';
 import {
   mockStore,
   getUserPanelUrl,
@@ -60,7 +60,6 @@ import { ImageUploadField } from '@/components/admin/ImageUploadField';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { isValidEmail, formatDate, cn } from '@/lib/utils';
 import { generateFinalPdf } from '@/lib/generateFinalPdf';
-import { inspectPdfFormFields } from '@/lib/inspectPdfFormFields';
 import { downloadSignedHtmlDocsAsPdf, hasSignedHtmlDocs } from '@/lib/htmlContractPdf';
 import { injectVariablesIntoHtml } from '@/lib/htmlContractVariables';
 import type { HtmlContractVariables } from '@/lib/htmlContractVariables';
@@ -105,13 +104,6 @@ export default function AdminPage() {
   const [signedFilter, setSignedFilter] = useState<'all' | 'pending' | 'partial' | 'completed'>('all');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isFillingSourcePdf, setIsFillingSourcePdf] = useState(false);
-  const [pdfInspectResult, setPdfInspectResult] = useState<{
-    hasForm: boolean;
-    fieldCount: number;
-    fields: { name: string; type: string }[];
-    error?: string;
-  } | null>(null);
-  const [isInspectingPdf, setIsInspectingPdf] = useState(false);
 
   // Kurye ol / Hizmet al / Referanslar
   const [kuryeOlList, setKuryeOlList] = useState<KuryeOlApplication[]>([]);
@@ -242,20 +234,6 @@ export default function AdminPage() {
     if (signedFilter === 'all') return true;
     return r.status === signedFilter;
   });
-
-  const handleInspectPdfForm = async () => {
-    setIsInspectingPdf(true);
-    setPdfInspectResult(null);
-    try {
-      const pdfUrl = window.location.origin + SOURCE_PDF_PATH;
-      const result = await inspectPdfFormFields(pdfUrl);
-      setPdfInspectResult(result);
-    } catch (err) {
-      setPdfInspectResult({ hasForm: false, fieldCount: 0, fields: [], error: String(err) });
-    } finally {
-      setIsInspectingPdf(false);
-    }
-  };
 
   const handleDownloadFinalPdf = async () => {
     if (!viewRequest) return;
