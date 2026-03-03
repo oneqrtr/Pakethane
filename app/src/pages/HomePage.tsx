@@ -76,76 +76,80 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header - Paket Taxi tarzı: logo, menü, 2 CTA */}
-      <header className="bg-white/95 backdrop-blur border-b sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 min-w-0">
-            <img
-              src={`${import.meta.env.BASE_URL}logo.webp`}
-              alt="Pakethane Lojistik"
-              className="h-14 sm:h-16 w-auto flex-shrink-0 object-contain"
-            />
-            <span className="text-lg font-bold text-gray-900 truncate sm:hidden">Pakethane</span>
-            <span className="text-lg sm:text-xl font-bold text-gray-900 truncate hidden sm:inline">Pakethane Lojistik</span>
-          </Link>
-
-          <nav className="hidden lg:flex items-center gap-6">
-            {NAV.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition"
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="hidden lg:flex items-center gap-3">
-            <Link to="/basvuru/kurye-hizmeti-al">
-              <Button variant="outline" size="sm" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
-                Kurye Hizmeti Al
-              </Button>
+      {/* Header - ortada, yuvarlak, hafif şeffaf (≈%80) */}
+      <header className="sticky top-0 z-50 pt-[env(safe-area-inset-top)] px-3 sm:px-4 pt-3 sm:pt-4">
+        <div className="max-w-7xl mx-auto rounded-2xl sm:rounded-3xl bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-lg shadow-gray-200/50 overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-2 min-w-0">
+              <img
+                src={`${import.meta.env.BASE_URL}logo.webp`}
+                alt="Pakethane Lojistik"
+                className="h-14 sm:h-16 w-auto flex-shrink-0 object-contain"
+              />
+              <span className="text-lg font-bold text-gray-900 truncate sm:hidden">Pakethane</span>
+              <span className="text-lg sm:text-xl font-bold text-gray-900 truncate hidden sm:inline">Pakethane Lojistik</span>
             </Link>
-            <Link to="/basvuru/kurye-ol">
-              <Button size="sm">Pakethane Kuryesi Ol</Button>
-            </Link>
+
+            <nav className="hidden lg:flex items-center gap-6">
+              {NAV.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="hidden lg:flex items-center gap-3">
+              <Link to="/basvuru/kurye-hizmeti-al">
+                <Button variant="outline" size="sm" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+                  Kurye Hizmeti Al
+                </Button>
+              </Link>
+              <Link to="/basvuru/kurye-ol">
+                <Button size="sm">Pakethane Kuryesi Ol</Button>
+              </Link>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Menü"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileMenuOpen((o) => !o)}
-            aria-label="Menü"
+          <div
+            className={`lg:hidden border-t border-gray-200/60 overflow-hidden transition-all duration-300 ease-out ${
+              mobileMenuOpen ? 'max-h-[min(24rem,80vh)] opacity-100' : 'max-h-0 opacity-0 border-t-transparent'
+            }`}
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        <div
-          className={`lg:hidden border-t overflow-hidden transition-all duration-300 ease-out ${
-            mobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 border-t-transparent'
-          }`}
-        >
-          <div className="px-4 py-4 flex flex-col gap-2">
-            {NAV.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="py-2 text-gray-700 font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-            <div className="flex flex-col gap-2 pt-2 border-t">
-              <Link to="/basvuru/kurye-hizmeti-al" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full border-accent text-accent">Kurye Hizmeti Al</Button>
-              </Link>
-              <Link to="/basvuru/kurye-ol" onClick={() => setMobileMenuOpen(false)}>
-                <Button size="sm" className="w-full">Pakethane Kuryesi Ol</Button>
-              </Link>
+            <div className="px-4 py-4 flex flex-col gap-2 bg-white/50 overflow-y-auto max-h-[min(24rem,80vh)]">
+              <div className="flex flex-col gap-2 pb-3 border-b border-gray-200/60 shrink-0">
+                <Link to="/basvuru/kurye-hizmeti-al" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full border-accent text-accent">Kurye Hizmeti Al</Button>
+                </Link>
+                <Link to="/basvuru/kurye-ol" onClick={() => setMobileMenuOpen(false)}>
+                  <Button size="sm" className="w-full">Pakethane Kuryesi Ol</Button>
+                </Link>
+              </div>
+              <nav className="flex flex-col gap-1 shrink-0">
+                {NAV.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="py-2.5 text-gray-700 font-medium block"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
             </div>
           </div>
         </div>
