@@ -43,6 +43,7 @@ import {
   Pencil,
   BookOpen,
   ScrollText,
+  Smartphone,
 } from 'lucide-react';
 import { DOCUMENT_PACK, getDocumentByCode, KKD_TESLIM_TUTANAGI_CODE, FRANCHISE_EK_B_TIPI_EK1_ODEME_DETAYLARI_CODE } from '@/config/documentPack';
 import {
@@ -118,6 +119,8 @@ export default function AdminPage() {
   const [sendLinkEk1MotorNo, setSendLinkEk1MotorNo] = useState('');
   const [refForm, setRefForm] = useState<{ id?: string; title: string; logoUrl: string; link: string }>({ title: '', logoUrl: '', link: '' });
   const [refDialogOpen, setRefDialogOpen] = useState(false);
+  const [pwaInstallable, setPwaInstallable] = useState(false);
+  const [pwaDeferredPrompt, setPwaDeferredPrompt] = useState<{ prompt: () => Promise<void> } | null>(null);
   const [blogList, setBlogList] = useState<BlogPost[]>([]);
   const [blogForm, setBlogForm] = useState<{ id?: string; title: string; excerpt: string; content: string; imageUrl: string }>({ title: '', excerpt: '', content: '', imageUrl: '' });
   const [blogDialogOpen, setBlogDialogOpen] = useState(false);
@@ -131,6 +134,19 @@ export default function AdminPage() {
       setBlogList(blogStore.getAll());
     }
   }, [isAdmin, isAuthenticated]);
+
+  // PWA: Telefona / masaüstüne eklenebilir panel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setPwaDeferredPrompt({ prompt: () => (e as unknown as { prompt: () => Promise<void> }).prompt() });
+      setPwaInstallable(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    if (isStandalone) setPwaInstallable(false); // Zaten yüklüyse gösterme
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const refreshKuryeOl = () => setKuryeOlList(kuryeOlStore.getAll());
   const refreshReferences = () => setReferencesList(referencesStore.getAll());
@@ -510,7 +526,28 @@ export default function AdminPage() {
             })}
           </nav>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t space-y-3">
+            {pwaInstallable && (
+              <div className="rounded-lg bg-primary/10 p-3 text-center">
+                <p className="text-xs text-gray-700 mb-2 flex items-center justify-center gap-1">
+                  <Smartphone className="h-3.5 w-3.5" />
+                  Paneli masaüstüne veya ana ekrana ekleyebilirsiniz.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => pwaDeferredPrompt?.prompt()}
+                >
+                  Panele Ekle / İndir
+                </Button>
+              </div>
+            )}
+            {!pwaInstallable && typeof navigator !== 'undefined' && !window.matchMedia('(display-mode: standalone)').matches && (navigator as Navigator & { standalone?: boolean }).standalone !== true && (
+              <p className="text-xs text-muted-foreground text-center px-1">
+                Tarayıcı menüsünden &quot;Masaüstüne Ekle&quot; veya &quot;Ana Ekrana Ekle&quot; ile paneli yükleyebilirsiniz.
+              </p>
+            )}
             <Button
               variant="outline"
               className="w-full flex items-center gap-2"
