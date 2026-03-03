@@ -9,10 +9,13 @@ import UploadDocumentPage from './pages/UploadDocumentPage';
 import { Toaster } from '@/components/ui/sonner';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { CookieConsent } from '@/components/CookieConsent';
+import { PwaSplash } from '@/components/PwaSplash';
 
 function App() {
   return (
-    <HashRouter>
+    <>
+      <PwaSplash />
+      <HashRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/basvuru/kurye-ol" element={<KuryeOlPage />} />
@@ -27,6 +30,7 @@ function App() {
       <WhatsAppButton />
       <CookieConsent />
     </HashRouter>
+    </>
   );
 }
 
