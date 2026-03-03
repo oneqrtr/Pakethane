@@ -6,7 +6,7 @@ const FADEOUT_MS = 400;
 export function PwaSplash() {
   const [phase, setPhase] = useState<'show' | 'exit'>('show');
   const [mounted, setMounted] = useState(true);
-  const exitRef = useRef<ReturnType<typeof setTimeout>>();
+  const exitRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const showTimer = setTimeout(() => setPhase('exit'), SPLASH_DURATION_MS);
