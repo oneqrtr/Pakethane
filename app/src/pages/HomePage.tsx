@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Truck, Mail, Phone, MapPin, Menu, X, Bike, Car, ShieldCheck, Shield, Sparkles } from 'lucide-react';
 import { referencesStore } from '@/lib/store/referencesStore';
 import { blogStore } from '@/lib/store/blogStore';
 import { ReferencesCarousel } from '@/components/landing/ReferencesCarousel';
 import { AnimatedCounter } from '@/components/landing/AnimatedCounter';
+import type { BlogPost } from '@/types';
 
 const NAV = [
   { label: 'Biz Kimiz', href: '#hakkimizda' },
@@ -49,7 +51,10 @@ export default function HomePage() {
   const [blogPosts, setBlogPosts] = useState(blogStore.getAll());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [statsInView, setStatsInView] = useState(false);
+  const [blogModalPost, setBlogModalPost] = useState<BlogPost | null>(null);
   const statsRef = useRef<HTMLElement>(null);
+
+  const baseUrl = import.meta.env.BASE_URL;
 
   useEffect(() => {
     setReferences(referencesStore.getAll());
@@ -118,8 +123,12 @@ export default function HomePage() {
           </Button>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t px-4 py-4 flex flex-col gap-2">
+        <div
+          className={`lg:hidden border-t overflow-hidden transition-all duration-300 ease-out ${
+            mobileMenuOpen ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0 border-t-transparent'
+          }`}
+        >
+          <div className="px-4 py-4 flex flex-col gap-2">
             {NAV.map((item) => (
               <a
                 key={item.href}
@@ -139,7 +148,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        )}
+        </div>
       </header>
 
       {/* Hero - Web: slogan+CTA solda, resim sağda paralel | Mobil: önce CTA sonra resim */}
@@ -150,10 +159,11 @@ export default function HomePage() {
             <img
               src={`${import.meta.env.BASE_URL}logo.webp`}
               alt="Pakethane Lojistik"
-              className="h-[12rem] sm:h-[14rem] lg:h-[15rem] w-auto object-contain mx-auto lg:mx-0 mb-4"
+              className="h-[10rem] sm:h-[12rem] lg:h-[13rem] w-auto object-contain mx-auto lg:mx-0 mb-4"
             />
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
-              Pakethane geniş filomuzla sizlere hizmet etmeye geldik!
+            <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-3">Güvenilir Lojistik Ortağınız</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 leading-tight">
+              Geniş filomuzla kurye ve teslimat hizmetinde yanınızdayız
             </h1>
             <p className="text-base sm:text-lg text-gray-600 mb-5">
               Güvenilir kurye hizmeti. Hizmet alın veya kurye ekibimize katılın.
@@ -188,6 +198,7 @@ export default function HomePage() {
       {/* Bizi Anlatan Rakamlar - görünür olduğunda sayılar yukarı sayar */}
       <section ref={statsRef} className="bg-white border-y py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">Rakamlar</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-10 sm:mb-14 text-center">
             Bizi Anlatan Rakamlar
           </h2>
@@ -219,16 +230,42 @@ export default function HomePage() {
       {/* Hakkımızda / Biz Kimiz */}
       <section id="hakkimizda" className="py-16 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">Hakkımızda</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
             Biz Kimiz?
           </h2>
-          <p className="text-gray-600 max-w-3xl mx-auto text-center leading-relaxed mb-12">
+          <p className="text-gray-600 max-w-3xl mx-auto text-center leading-relaxed mb-6">
             İşletmelerin kurye ve dağıtım süreçlerini güvenle yönetebilmesi için modern ve sürdürülebilir çözümler üretiyoruz.
             E-ticaret gönderilerinden restoran siparişlerine kadar geniş bir yelpazede, hızlı, planlı ve teknoloji destekli lojistik hizmet sunuyoruz.
             Amacımız yalnızca paket taşımak değil; markanızın operasyonel gücünü artıran bir iş ortağı olmaktır.
           </p>
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
-            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-primary/20 transition">
+          <p className="text-gray-600 max-w-2xl mx-auto text-center text-sm sm:text-base mb-8">
+            Geniş kurye ağımız ve teknoloji altyapımızla her bölgede hızlı, güvenilir teslimat.
+          </p>
+          {/* p1 + p2 birlikte, diyagonal mavi-kırmızı çizgiler çerçevede görünür */}
+          <div className="relative max-w-4xl mx-auto mb-12">
+            {/* Çerçeve: diyagonal çizgiler dışta, beyaz alan içte böylece çizgiler görünür */}
+            <div
+              className="rounded-2xl p-2 sm:p-3 min-h-[200px]"
+              style={{
+                background: `
+                  repeating-linear-gradient(45deg, hsl(214 100% 33%) 0px, hsl(214 100% 33%) 3px, transparent 3px, transparent 14px),
+                  repeating-linear-gradient(-45deg, hsl(1 97% 59%) 0px, hsl(1 97% 59%) 3px, transparent 3px, transparent 14px)
+                `,
+              }}
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-5 bg-white rounded-xl border border-gray-200 shadow-lg">
+                <div className="rounded-xl overflow-hidden ring-2 ring-primary/30 shadow-md">
+                  <img src={`${baseUrl}p1.png`} alt="Pakethane kurye ekibi" className="w-full h-auto object-cover" />
+                </div>
+                <div className="rounded-xl overflow-hidden ring-2 ring-accent/30 shadow-md">
+                  <img src={`${baseUrl}p2.png`} alt="Pakethane kurye hizmeti" className="w-full h-auto object-cover" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 mt-4">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
               <div className="rounded-full bg-primary/10 p-4 mb-4">
                 <ShieldCheck className="h-8 w-8 text-primary" />
               </div>
@@ -238,7 +275,7 @@ export default function HomePage() {
                 Her gönderi planlı şekilde organize edilir, her teslimat takip edilir ve her iş ortaklığı uzun vadeli güven üzerine inşa edilir.
               </p>
             </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-primary/20 transition">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
               <div className="rounded-full bg-primary/10 p-4 mb-4">
                 <Shield className="h-8 w-8 text-primary" />
               </div>
@@ -249,7 +286,7 @@ export default function HomePage() {
                 Sizin için sadece hızlı değil, aynı zamanda güvenli teslimat sağlarız.
               </p>
             </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-gray-50 hover:border-primary/20 transition">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl border border-gray-200 bg-gray-50/50 hover:bg-white hover:border-primary/30 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
               <div className="rounded-full bg-primary/10 p-4 mb-4">
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
@@ -267,6 +304,7 @@ export default function HomePage() {
       {/* Hizmetlerimiz - 3 kart, madde işaretli (Moto / Araç / Yaya tarzı) */}
       <section id="hizmetlerimiz" className="bg-white border-y py-16 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">Hizmetlerimiz</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
             Hızlı ve Güvenilir Kurye Hizmeti
           </h2>
@@ -277,7 +315,7 @@ export default function HomePage() {
             {SERVICES.map((s) => {
               const Icon = s.icon;
               return (
-                <Card key={s.title} className="flex flex-col">
+                <Card key={s.title} className="flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/20">
                   <CardHeader>
                     <Icon className="h-10 w-10 text-primary mb-2" />
                     <CardTitle className="text-lg">{s.title}</CardTitle>
@@ -301,6 +339,7 @@ export default function HomePage() {
       {/* Referanslarımız - Kayan logolar */}
       <section id="referanslarimiz" className="py-12 sm:py-16 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">Referanslar</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 text-center">
             Referanslarımız
           </h2>
@@ -311,6 +350,7 @@ export default function HomePage() {
       {/* Blog - admin panelden yönetilir */}
       <section id="blog" className="bg-white border-y py-16 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">İçerik</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-10 text-center">
             Blog
           </h2>
@@ -319,13 +359,21 @@ export default function HomePage() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogPosts.map((post) => (
-                <Card key={post.id} className="overflow-hidden flex flex-col">
+                <Card key={post.id} className="overflow-hidden flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
                   <div className="aspect-video bg-muted overflow-hidden">
                     <img src={post.imageUrl} alt="" className="w-full h-full object-cover" />
                   </div>
-                  <CardHeader className="flex-1">
+                  <CardHeader className="flex-1 flex flex-col">
                     <CardTitle className="line-clamp-2 text-lg">{post.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground line-clamp-3">{post.excerpt}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{post.excerpt}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 w-full sm:w-auto border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                      onClick={() => setBlogModalPost(post)}
+                    >
+                      Devamını oku
+                    </Button>
                   </CardHeader>
                 </Card>
               ))}
@@ -334,15 +382,38 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Blog yazısı modal - Devamını oku */}
+      <Dialog open={!!blogModalPost} onOpenChange={(open) => !open && setBlogModalPost(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {blogModalPost && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl pr-8">{blogModalPost.title}</DialogTitle>
+              </DialogHeader>
+              <div className="aspect-video bg-muted rounded-lg overflow-hidden mb-4">
+                <img src={blogModalPost.imageUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                {blogModalPost.content}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Hemen Arayın - Telefon CTA (Paket Taxi benzeri) */}
       <section className="py-16 sm:py-20 lg:py-24 bg-primary text-primary-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary-foreground/80 mb-2">7/24 Destek</p>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">
             Hemen Şimdi Arayın, Hızlıca Teklif Alın
           </h2>
+          <p className="text-primary-foreground/90 text-sm sm:text-base mb-6 max-w-xl mx-auto">
+            Uzman ekibimiz size en uygun çözümü sunmak için hazır.
+          </p>
           <a
             href="tel:+908503360336"
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wide hover:underline inline-block mt-6"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wide hover:underline underline-offset-4 inline-block mt-2"
           >
             0 850 XXX XX XX
           </a>
@@ -352,6 +423,7 @@ export default function HomePage() {
       {/* İletişim */}
       <section id="iletisim" className="py-16 sm:py-20 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary mb-2 text-center">Bize Ulaşın</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 text-center">
             İletişim
           </h2>

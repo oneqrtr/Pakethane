@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Reference } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -7,6 +8,8 @@ interface ReferencesCarouselProps {
 }
 
 export function ReferencesCarousel({ references, className }: ReferencesCarouselProps) {
+  const [paused, setPaused] = useState(false);
+
   if (references.length === 0) {
     return (
       <div className={cn('py-8 text-center text-muted-foreground text-sm', className)}>
@@ -19,8 +22,17 @@ export function ReferencesCarousel({ references, className }: ReferencesCarousel
   const duplicated = [...references, ...references];
 
   return (
-    <div className={cn('overflow-hidden', className)}>
-      <div className="references-track flex gap-12 items-center w-max animate-references-scroll">
+    <div
+      className={cn('overflow-hidden', className)}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div
+        className={cn(
+          'references-track flex gap-12 items-center w-max animate-references-scroll',
+          paused && 'references-scroll-paused'
+        )}
+      >
         {duplicated.map((ref, i) => (
           <a
             key={`${ref.id}-${i}`}
@@ -45,6 +57,9 @@ export function ReferencesCarousel({ references, className }: ReferencesCarousel
         }
         .animate-references-scroll {
           animation: references-scroll 30s linear infinite;
+        }
+        .references-scroll-paused {
+          animation-play-state: paused;
         }
       `}</style>
     </div>

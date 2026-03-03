@@ -72,8 +72,10 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   }
 }
